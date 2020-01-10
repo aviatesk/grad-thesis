@@ -1,28 +1,11 @@
 % !TeX root = ./main.tex
 
-\section{バグ検出を考える上でのJulia言語の考察}
+\section{バグ検出を考える上でのJulia言語の考察と先行研究}
 
-コード example
+このセクションではJulia言語の重要な特徴を簡単に紹介し，その上それがいかに
 
-\begin{minted}[frame=lines,linenos,breaklines]{julia}
-  abstract type T end
-  struct T1 <: T
-      foo::Int
-      bar
-  end
-  struct T2 <: T
-      foo::Float64
-      baz
-  end
-  function foo(t::T)
-      if t.foo <= 0
-          return nothing
-      else
-          return t.bar
-      end
-  end
+\subsection{Julia言語の特徴と静的解析}
 
-  foo(T1(1, 1))
-  foo(T2(1., 1))
-  foo(T2(0., 1))
-\end{minted}
+\subsection{先行研究}
+
+% \inputminted[frame=lines,linenos,breaklines]{julia}{sample.jl}
