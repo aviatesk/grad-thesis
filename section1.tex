@@ -21,7 +21,7 @@ Juliaはgeneric function（総称関数）に対するcode specializationとcode
 ここで，generic functionは同一の名前を持ち多相的な振る舞いをする関数であり，generic functionは実行時にある引数を伴ってはじめて呼ばれたタイミングでコンパイル（これをJITコンパイル，または単にJITとよぶ）される．
 JITの過程においては，まず引数の型情報を用いてその関数呼び出しに対する型推論が行われ，その関数内部で呼び出す関数（正確にはメソッド）の決定や，constant propagation, function inlingなどの標準的な最適化が行われた後，LLVMフレームワーク\cite{LLVM}を用いた最適化が行われ，最終的に個々のプラットフォームに対応したマシンコードが生成され，実行される．生成されたコードはキャッシュされ，次回以降の同じ引数型組を伴う呼び出しで使用される．
 このgeneric functionのそれぞれの引数型組を伴う呼び出しに対する最適化のプロセスをcode specializationと呼ぶ．
-例えば，Juliaに標準で備わっている\texttt{sum}関数の呼び出し\texttt{sum([1, 0, 1])}は\texttt{Array\{Int,1\}}という引数型に対し最適化されたマシンコードを生成し，引数型\texttt{Array\{Float64,1\}}を伴う呼び出し\texttt{sum([1., 0., 1.])}はまた別のコードを生成する．
+例えば，Juliaに標準で備わっている\verb|sum|関数の呼び出し\verb|sum([1, 0, 1])|は\verb|Array{Int,1}|という引数型に対し最適化されたマシンコードを生成し，引数型\verb|Array{Float64,1}|を伴う呼び出し\verb|sum([1., 0., 1.])|はまた別のコードを生成する．
 
 % code selection
 また，1つのgeneric functionは複数の実装を持つことができ，プログラマはgeneric functionの定義時に引数に型アノテーションを付けることで，その実装が適用され得る引数型組の集合を記述し，その引数に対し適切な実装（これをメソッドと呼ぶ）を与えることができる．
@@ -30,25 +30,25 @@ generic functionが呼ばれた時，そのメソッドの中から（全ての�
 このdynamic multiple dispatchによるメソッドの選択をcode selectionと呼ぶ．
 
 \footnotetext{
-  % TODO
+  % TODO: describe what "specialized"
   「特化した」（specialized）メソッドの定義が実は曖昧であることに触れておく．
 }
 
-具体例として，\texttt{sum}関数に対するcode selectionを考えてみる．Julia v1.5においては\texttt{sum}関数には標準ライブラリを含めて14個のメソッドが与えられている．そのうちの3つは以下のように実装されている．
+具体例として，\verb|sum|関数に対するcode selectionを考えてみる．Julia v1.5においては\verb|sum|関数には標準ライブラリを含めて計14個のメソッドが与えられている．そのうちの3つを抜粋する（読みやすさのためやや改変している）．
 
 \inputminted[frame=lines, linenos]{julia}{src/sums_method.jl}
 
 1行目のメソッドが最もgenericな場合を扱う実装であり，2行目のメソッドがgenericな配列型に対する実装，そして3行目のメソッドがboolean型の要素を持つ配列に特化した実装となっている．
-5行目の呼び出しは\texttt{(1, 0, 1)}の型\texttt{Tuple\{Int,Int,Int\}}に合うメソッドシグネチャが\texttt{sum(a)}の他に存在しないため，1行目のメソッドにdispatchされる．次に，6行目の呼び出しは一般的な配列型の引数に特化した2行目のメソッドにdispatchされる．最後に7行目の呼び出しは，特に\texttt{BitArray}型の配列の効率的なメモリレイアウトを利用する\texttt{count}関数を呼び出す3行目のメソッドにdispatchされる．
+5行目の呼び出しは\verb|(1, 0, 1)|の型\verb|Tuple{Int,Int,Int}|に合うメソッドシグネチャが\verb|sum(a)|の他に存在しないため，1行目のメソッドにdispatchされる．次に，6行目の呼び出しは一般的な配列型の引数に特化した2行目のメソッドにdispatchされる．最後に7行目の呼び出しは，特に\verb|BitArray|型の配列の効率的なメモリレイアウトを利用する\verb|count|関数を呼び出す3行目のメソッドにdispatchされる．
 
 ここで注意するべきなのは，型アノテーションは基本的にメソッドのdispatchをコントロールする目的のため\textbf{だけ}に用いられるということである．
-例えば，\texttt{sum(a::AbstractArray; dims=:)}は和を取る配列の次元を指定するキーワード引数\texttt{dims}を受け取るため，最もgenericな\texttt{sum(a)}とは異なるメソッドである必要があるが\footnotemark[1]，
-\texttt{sum}を呼び出す次のような関数\texttt{add\_sum}を定義する場合，型アノテーションの有無に関わらず呼び出し時の引数型に応じたcode specializationが行われるため，型アノテーションを付けることはパフォーマンスの向上には繋がらず，むしろいたずらにこの関数が持ちうる多相性を損なってしまうことになる．\footnotemark[2]
+例えば，\verb|sum(a::AbstractArray; dims=:)|は和を取る配列の次元を指定するキーワード引数\verb|dims|を受け取るため，最もgenericな\verb|sum(a)|とは異なるメソッドである必要があるが\footnotemark[1]，
+\verb|sum|を呼び出す次のような関数\verb|add_sum|を定義する場合，型アノテーションの有無に関わらず呼び出し時の引数型に応じたcode specializationが行われるため，型アノテーションを付けることはパフォーマンスの向上には繋がらず，むしろいたずらにこの関数が持ちうる多相性を損なってしまうことになる．\footnotemark[2]
 
 \mint{julia}|add_sum(a) = a .+ sum(a)|
 
 \footnotetext[1]{
-  キーワード引数はdispatchにおいて考慮されないことに注意．
+  キーワード引数はdispatchにおいて考慮されないため，位置引数の型に対するdispatchを用いる必要がある．
 }
 \footnotetext[2]{
   また型アノテーションにより，JITコンパイルの速度面でのパフォーマンスが向上することもない．
@@ -79,7 +79,7 @@ generic functionが呼ばれた時，そのメソッドの中から（全ての�
 Juliaの言語実装の大部分は自身で記述されているため，言語のコア機能から各パッケージに至るまで様々なレイヤーのコードが多相的にプログラムされている．
 このJuliaの洗練された言語設計によりそれらのコードは多くの場合でプログラマの期待通りに動くものの，そうでない場合に発生するエラーをプログラマが事前に予想することは難しい．
 
-例えば，以下のようなコマンドライン引数（文字列型の配列型）を整数にパースし，それらの和を返す関数\texttt{parse\_sum}があるとする．
+例えば，以下のようなコマンドライン引数（文字列型の配列型）を整数にパースし，それらの和を返す関数\verb|parse_sum|があるとする．
 
 \begin{listing}[ht]
   \inputminted[frame=lines]{julia}{src/parse_sum.jl}
@@ -87,9 +87,9 @@ Juliaの言語実装の大部分は自身で記述されているため，言語
   \label{lst:target1}
 \end{listing}
 
-このプログラムは一見するとバグが含まれていないように見え，実際に\texttt{ARGS}の長さが１以上の時は正常に動作する．
-しかし，\texttt{ints}の型が\texttt{Array\{Any,1\}}であるため，\texttt{ARGS}が空の配列である場合に，４行目の\texttt{sum(ints)}の内部における関数呼び出し\texttt{zero(T)}（\texttt{T}は\texttt{sum}の引数の要素型，この場合は\texttt{Any}）で\texttt{zero(::Type\{Any\})}という関数呼び出しのシグネチャがdispatchされ得るメソッドが存在しないことによるエラーが発生する．
-この場合，\texttt{zero}をオーバーロードし\texttt{zero(::Type\{Any\})}に対応するメソッドを追加するか，\texttt{ints = Int[]}として\texttt{ints}の要素型まで指定して宣言することでエラーは避けられるものの，\texttt{sum}が引数の要素型に制限を設けず多相的に定義されている以上，\texttt{sum}がgenericな配列型に対して動作すると期待するプログラマがこうしたエラーを事前に予測することは簡単ではない．
+このプログラムは一見するとバグが含まれていないように見え，実際に\verb|ARGS|の長さが1以上の時は正常に動作する．
+しかし，\verb|ints|の型が\verb|Array{Any,1}|であるため，\verb|ARGS|が空の配列である場合に，4行目の\verb|sum(ints)|の内部における関数呼び出し\verb|zero(T)|（\verb|T|は\verb|sum|の引数の要素型，この場合は\verb|Any|である）において， \verb|zero(::Type{Any})|という呼び出しのシグネチャがdispatchされ得るメソッドが存在しないことによるエラーが発生する．
+この場合，\verb|zero|をオーバーロードし\verb|zero(::Type{Any})|に対応するメソッドを追加するか，2行目を \jlinline{ints = Int[]} として\verb|ints|の要素型まで指定して宣言することでエラーは避けられるものの，\verb|sum|が引数の要素型に制限を設けず多相的に定義されている以上，\verb|sum|がgenericな配列型に対して動作すると期待するプログラマがこうしたエラーを事前に予測することは簡単ではない．
 
 また，こうしたエラーを実行時前に静的に検査することも容易ではない．
 というのは，一般にJuliaのgeneric functionの挙動は，その呼び出し時に与えられた引数型に従って決定されるからである．
@@ -99,47 +99,45 @@ Juliaの言語実装の大部分は自身で記述されているため，言語
 
 また，Juliaはそのメタプログラミング機能によっても特徴付けられる．
 
-例えば，上述の\texttt{sum(::AbstractArray; dims = :)}は実際にはメタプログラミングを用いて，他の同様の構造を持つ関数とまとめて同時に定義されている．
+メタプログラミングはJuliaプログラムのいたるところで用いられる．例えば，上述の\verb|sum(a::AbstractArray; dims = :)|メソッドも実際にはメタプログラミングを用いて，同様の構造を持つ他の関数とまとめて定義されている．
 \footnote{
   \url{https://github.com/JuliaLang/julia/blob/a7cd97a293df20b0f05c5ad864556938d91dcdea/base/reducedim.jl\#L648-L659}より抜粋．
 }
 
 \inputminted[frame=lines, firstline=3, lastline=12, breaklines]{julia}{src/sums_def.jl}
 
-こうした文字操作的なメタプログラミングは他の言語でもよく見られる機能であるが，Juliaのメタプログラミング機能は\textbf{より}強力である．
-全てのJuliaプログラムは木構造を持つ式であり，プログラマはマクロを通じてパースタイムにおいてあらゆるプログラムのデータ構造にアクセスし，操作することができる．
-上のプログラムにおける\texttt{@inline}など\texttt{@}から始まるコードがマクロに相当し，ここでは，\texttt{@inline}マクロは関数定義の式を受け取り，最適化の過程においてその関数をinliningするように促す「ヒント」をJITコンパイラに与えるメタ情報を関数定義に追加する．
-言語のコア機能に限らずJuliaのエコシステムにおいてもマクロは頻繁に用いられており，例えばJuliaの数理最適化分野におけるデファクトスタンダードなパッケージであるJuMP.jl\cite{DunningHuchetteLubin2017}はマクロを効果的に利用し，以下のような明瞭で簡潔なモデリング記法を提供している．
+こうした文字操作的なメタプログラミングは他の動的言語でもよく見られる機能であるが，
+Juliaのメタプログラミング機能は，プログラマがマクロを通じてパースタイムにおいてあらゆるプログラムをデータ構造として扱い操作することができるという点で，\textbf{より}強力であり，いわゆる「Lispスタイル」のマクロを提供している．
+上のプログラムにおける\verb|@inline|など\verb|@|から始まるコードがマクロに相当し，ここでは，\verb|@inline|マクロは関数定義の式を受け取り，最適化の過程においてその関数をinliningするように促す「ヒント」をJITコンパイラに与えるメタ情報を関数定義に追加する．
+言語のコア機能に限らずJuliaのエコシステムにおいてもマクロは頻繁に用いられており，例えばJuliaの数理最適化分野におけるデファクトスタンダードなパッケージであるJuMP.jl\cite{DunningHuchetteLubin2017}は独自のマクロを効果的に定義し，以下のような明瞭で簡潔なモデリング記法を提供している．
 
 \begin{listing}[ht]
-  \inputminted[frame=lines, firstline=4, lastline=10]{julia}{src/jump.jl}
+  \inputminted[frame=lines, linenos, firstnumber=1, firstline=4, lastline=10]{julia}{src/jump.jl}
   \caption{code including macros}
   \label{lst:target2}
 \end{listing}
 
-このようにJuliaのプログラミングパターンにおいては，いたるところでメタプログラミングが使用され\footnotemark，冗長なコードをより簡潔に記述できる他，ドメイン特化的なノーテーションを表現することが，科学計算の各分野における様々な記法を単一の汎用言語のシンタックスの中で表現することができる\cite{jeff-phd}．
+このようにJuliaのプログラミングパターンにおいては，いたるところでメタプログラミングが使用され\footnotemark，冗長なコードをより簡潔に記述できる他，科学計算の各分野におけるドメイン特化的な記法を単一の汎用言語のシンタックスの中で表現することができる\cite{jeff-phd}．
 
 \footnotetext{
   こうしたパースタイムにおけるマクロ展開によるシンタックスレベルのメタプログラミングの他，関数のコンパイル時に引数の型情報を用いて新たにコードを生成しそれを実行するstaged programmingも可能である．
-  Juliaのstaged programmingは上述したgeneric functionのdispatchのメカニズムを利用した非常に自然な言語機能として提供されており，
+  Juliaのstaged programmingは上述したgeneric functionのdispatchのメカニズムを用いた非常に自然な言語機能として提供されている．
   コードの生成する関数自身がその他のgeneric functionと同じように呼び出され，生成されたコードは通常の関数呼び出しと同じようにJITコンパイルによる最適化が行われた後，実行される．
 }
 
 その一方で，一般にコードを生成するコード，つまりマクロ（あるいはstaged programmmingにおけるcode generator）はそれ自体がバグを含みやすく，またメタプログラミングは適切でない場面で使用された場合，コードの可読性を著しく下げてしまうこともある．
-しかしそれにも関わらず，メタプログラミングを含むコードに含まれるエラーを静的に解析することは難しい．
-% XXX: eval 以外に実行時の値を用いるメタプログラミングあるかチェック
-というのも，\texttt{eval}など実行時の値を用いるため原理的に完全な静的解析が不可能なメタプログラミングが存在する他，マクロを含むコードについてもマクロを展開するまでその文法上の意味を決定できないからである．
-例えば，listing~\ref{lst:target2}のJuMP.jlの\texttt{@variable}マクロのその引数式\textbf{だけ}を見ると，\texttt{0 <= x <= 2}の部分はまだ定義されていない変数を\texttt{x}を参照しているため未定義エラーを起こしてしまうように解析され得るが，実際には，その引数式はそのまま評価されず，\texttt{@variable}マクロ展開時に引数式のそれぞれの形式に対応してそれをJuMP.jlの内部的なデータに自動的に変換されたコードが実行されるため，エラーは生じず正常に動作する．
-この例からも分かるようにJuliaプログラムの正確な解析のためにはマクロ展開後のコードに対する解析を行う必要があるが，
-% XXX: 言い方がおかしいかも:
-% マクロ展開のためにインタプリタを自前で実装する必要があるなど
-% 言語のコア機能を「再実装」する手間が生じるということが言いたい
-これはプログラムの静的解析が言語機能として行われない場合その完全な実装を困難にする1つの要因となる．
-\footnote{
-  Juliaの現行のエコシステムにおいて，最も正確にシンタックスレベルのエラーを静的に検出するパッケージとして\href{https://github.com/julia-vscode/StaticLint.jl}{StaticLint.jl}があるが，
-  % FIXME: Zac からの返信を待つ
-  マクロ展開のためにはJuliaプログラムのインタプリタの再実装が必要となり，またプログラムの解釈にかかるプロセスが解析の複雑度を上げパフォーマンスを下げるため，
-  listing~\ref{lst:target2}のようなシンタックス上の意味を大きく変えるマクロについては，JuMP.jlなどエコシステムにおける重要度の高いパッケージのマクロをそれぞれspecial caseすることで対応している:
+しかしそれにも関わらず，メタプログラミングを含むコードを静的に解析することは難しい．
+例えば，listing~\ref{lst:target2}の3行目の\verb|@variable|マクロの引数式 \jlinline{0 <= x <= 2} \textbf{だけ}を見ると，まだ定義されていない変数\verb|x|を参照しているため未定義エラーを起こしてしまうように解析され得るが，実際には，この引数式はそのまま評価されず，\verb|@variable|マクロの展開時に式のそれぞれの形式に対応してJuMP.jlの内部的なデータとして変数\verb|x|を定義するようなプログラムが生成されるため，エラーは生じず正常に動作する．
+この例からも分かるようにJuliaプログラムの正確な解析のためにはマクロ展開後のコードに対する解析を行う必要があるが，マクロ展開のためには何らかのインタプリタが必要になり，静的解析の実装における1つの障壁になりうる．\footnotemark
+
+% REVIEW: eval など実行時の値を用いるメタプログラミングは原理的に完全な静的解析ができない
+% \verb|eval|など実行時の値を用いるため原理的に完全な静的解析が不可能なメタプログラミング機能が存在する
+
+\footnotetext{
+  マクロの存在が静的解析の実装を難しくする例として，\href{https://github.com/julia-vscode/StaticLint.jl}{StaticLint.jl}での事例がある．
+  StaticLint.jlは主にエディタのLinting機能のバックエンドとして使用されることを想定したパッケージであり，現行のエコシステムにおいて最も正確にJuliaプログラムに含まれるシンタックスレベルのエラーを検出することができるが，パフォーマンス上の理由から完全なマクロ展開をサポートしていない\cite{staticlint}．
+  マクロ展開に必要なプログラム解釈のプロセスは，解析の複雑度を上げ，結果として編集中のプログラムをリアルタイムで（on-the-flyに）解析可能なパフォーマンスを得ることが困難になる（例えばユーザが既に定義してあるマクロの定義を変更した場合，正確な解析のためにはもう一度プログラム全体を解釈しなおす必要がある）．
+  そのため，現状ではlisting~\ref{lst:target2}の\texttt{@variable}ようなシンタックス上の意味を大きく変えるマクロについては，JuMP.jlなどエコシステムにおける重要度の高いパッケージのマクロのみをそれぞれ個別にspecial caseすることで部分的に対応している:
   e.g. \url{https://github.com/julia-vscode/StaticLint.jl/pull/72}
 }
 

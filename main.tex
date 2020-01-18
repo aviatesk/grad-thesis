@@ -1,4 +1,8 @@
+% !TEX bib = ./main.bib
+
 \documentclass[uplatex, a4paper, 12pt]{jsarticle}
+
+\renewcommand\thefootnote{\arabic{footnote})}
 
 \usepackage[top=1in, bottom=1.5in, left=1in, right=1in]{geometry}
 \usepackage{listings}
@@ -6,13 +10,12 @@
 \usepackage{url}
 \usepackage{minted}
 \usemintedstyle{borland}
-
-\renewcommand\thefootnote{\arabic{footnote})}
+\newmintinline[jlinline]{julia}{}
 
 \begin{document}
 
-% TODO
-\title{プログラミング言語Juliaにおける型推論を用いたバグ検出器について}
+% TODO: title
+\title{プログラミング言語Juliaにおける型推論を用いたバグ検出について}
 \author{門脇　宗平}
 \date{\today}
 \maketitle
