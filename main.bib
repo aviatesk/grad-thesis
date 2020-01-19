@@ -1,5 +1,13 @@
 %%% core %%%
 
+% XXX: what is really appropriate ?
+@misc{ruby-progress-report,
+  author = {遠藤 侑介 and 松本 宗太郎 and 上野 雄大 and 住井 英二郎 and 松本 行弘},
+  title = {{Progress report: Ruby 3における静的型解析の実現に向けて}},
+  howpublished = {\url{https://github.com/mame/ruby-type-profiler/blob/master/doc/ppl2019.pdf}},
+  year = {2019}
+}
+
 @PhDThesis{jeff-phd,
   author = {Bezanson, Jeff},
   title	= {Abstraction in Technical Computing},
@@ -121,11 +129,10 @@
   year      = 2004
 }
 
-@online{type-annotation,
-  author = {{Julia Documentation}},
-  title = {{Performance Tips: Annotate values taken from untyped locations}},
-  howpublished = {\url{https://docs.julialang.org/en/v1/manual/performance-tips/#Annotate-values-taken-from-untyped-locations-1}},
-  note = {(Accessed on 01/16/2020)}
+@manual{type-annotation,
+  title = {{Julia Documentation - Performance Tips - Annotate values taken from untyped locations}},
+  url = {https://docs.julialang.org/en/v1/manual/performance-tips/#Annotate-values-taken-from-untyped-locations-1},
+  urldate = {2020-01-19}
 }
 
 @article{DunningHuchetteLubin2017,
@@ -139,10 +146,42 @@ year = {2017},
 doi = {10.1137/15M1020575},
 }
 
-@online{staticlint,
+@misc{staticlint-performance,
   author = {Nugent, Zac},
   title = {{add support for Turing.model macro by ZacLN - Pull Request \#64 - julia-vscode/StaticLint.jl}},
   howpublished = {\url{https://github.com/julia-vscode/StaticLint.jl/pull/64#issuecomment-575801768}},
-  year = {2020},
-  note = {(Accessed on 01/19/2020)}
+  note = {(Accessed on 2020-01-19)}
+}
+
+@misc{mypy,
+  title = {{mypy - Optional Static Typing for Python}},
+  howpublished = {\url{http://www.mypy-lang.org/}},
+  note = {(Accessed on 2020-01-19)}
+}
+
+@misc{dropbox,
+  title = {Our journey to type checking 4 million lines of Python | Dropbox Tech Blog},
+  howpublished = {\url{https://blogs.dropbox.com/tech/2019/09/our-journey-to-type-checking-4-million-lines-of-python/}},
+  note = {(Accessed on 2020-01-20)}
+}
+
+@misc{flow,
+  author = {{FaceBook}},
+  title = {{Flow - Adds static typing to JavaScript to improve developer productivity and code quality.}},
+  howpublished = {\url{https://github.com/facebook/flow}},
+  note = {(Accessed on 2020-01-19)}
+}
+
+@misc{steep,
+  author = {Matsumoto, Soutaro},
+  title = {{Steep - Gradual Typing for Ruby}},
+  howpublished = {\url{https://github.com/soutaro/steep}},
+  note = {(Accessed on 2020-01-19)}
+}
+
+@misc{typescript,
+  author = {Microsoft},
+  title = {{TypeScript - JavaScript that scales.}},
+  howpublished = {\url{https://www.typescriptlang.org/}},
+  note = {(Accessed on 2020-01-19)}
 }
