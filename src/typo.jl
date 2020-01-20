@@ -17,23 +17,18 @@ B.new.foo # don't error
 A.new.foo # cause error
 ```
 
-..., well, is this really good example ?
+... well, is this really good example ?
 =#
 
-abstract type F end
-struct F1 <: F
-  bar
-end
-struct F2 <: F
-  baz
-end
+abstract type T end
+struct A <: T end
+struct B <: T end
 
-function foo(f::F)
-  bar(f)
-  baz(f)
+function foo(t::T)
+  bar = 1
+  baz(t)
 end
-bar(f::F) = 1
-baz(f::F2) = 2
+baz(t::B) = 2
 
-foo(F1(1))  # don't cause error
-foo(F2(1.)) # error
+foo(B()) # don't cause error
+foo(A()) # error since there is not method for bar(f::A)
