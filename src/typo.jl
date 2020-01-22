@@ -20,15 +20,14 @@ A.new.foo # cause error
 ... well, is this really good example ?
 =#
 
-abstract type T end
-struct A <: T end
-struct B <: T end
-
-function foo(t::T)
-  bar = 1
-  baz(t)
+abstract type Foo end
+struct F1 <: Foo
+  bar
 end
-baz(t::B) = 2
+struct F2 <: Foo
+  baz # typo
+end
+bar(foo::Foo) = foo.bar
 
-foo(B()) # don't cause error
-foo(A()) # error since there is not method for bar(f::A)
+bar(F1(1)) # no error
+bar(F2(1)) # error because of undefined field `bar`

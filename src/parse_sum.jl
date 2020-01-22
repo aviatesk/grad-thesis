@@ -6,4 +6,4 @@ function parse_sum(args)
   return sum(ints)
 end
 
-parse_sum(ARGS) # error when empty
+parse_sum(ARGS) # error when ARGS is empty
