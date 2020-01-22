@@ -1,20 +1,5 @@
 %%% core %%%
 
-% XXX: what is really appropriate ?
-@misc{ruby-progress-report,
-  author = {遠藤 侑介 and 松本 宗太郎 and 上野 雄大 and 住井 英二郎 and 松本 行弘},
-  title = {{Progress report: Ruby 3における静的型解析の実現に向けて}},
-  howpublished = {\url{https://github.com/mame/ruby-type-profiler/blob/master/doc/ppl2019.pdf}},
-  year = {2019}
-}
-
-@PhDThesis{jeff-phd,
-  author = {Bezanson, Jeff},
-  title	= {Abstraction in Technical Computing},
-  school	= {Massachusetts Institute of Technology, Department of Electrical Engineering and Computer Science},
-  year={2015},
-  url={https://dspace.mit.edu/handle/1721.1/99811}
-}
 
 @article{julia-2012,
   added-at = {2018-08-13T00:00:00.000+0200},
@@ -32,12 +17,42 @@
   year = {2012}
 }
 
+% XXX: what is really appropriate ?
+@misc{ruby-progress-report,
+  author = {遠藤 侑介 and 松本 宗太郎 and 上野 雄大 and 住井 英二郎 and 松本 行弘},
+  title = {{Progress report: Ruby 3における静的型解析の実現に向けて}},
+  howpublished = {\url{https://github.com/mame/ruby-type-profiler/blob/master/doc/ppl2019.pdf}},
+  year = {2019}
+}
+
+@misc{ruby-type-profiler,
+  title = {ruby-type-profiler - An experimental type-level Ruby interpreter for testing and understanding Ruby code},
+  howpublished = {\url{https://github.com/mame/ruby-type-profiler}},
+  note = {(Accessed on 2020-01-21)}
+}
+
+@PhDThesis{jeff-phd,
+  author = {Bezanson, Jeff},
+  title	= {Abstraction in Technical Computing},
+  school	= {Massachusetts Institute of Technology, Department of Electrical Engineering and Computer Science},
+  year={2015},
+  url={https://dspace.mit.edu/handle/1721.1/99811}
+}
+
 @MastersThesis{jeff-master,
  author = {Bezanson, Jeff},
  title = {Julia: An Efficient Dynamic Language for Technical Computing},
  school	= {Massachusetts Institute of Technology, Department of Electrical Engineering and Computer Science},
  year = {2012},
  url={https://dspace.mit.edu/handle/1721.1/74897}
+}
+
+@misc{inference-algorithm,
+  author = {Nash, Jameson},
+  title = {{Inference Convergence Algorithm in Julia – Julia Computing}},
+  howpublished = {\url{https://juliacomputing.com/blog/2016/04/04/inference-convergence.html#fnref:typesize:1}},
+  year = {2016},
+  note = {(Accessed on 2020-01-22)}
 }
 
 %%% adapted from https://github.com/JuliaLang/julia/blob/master/CITATION.bib %%%
@@ -160,7 +175,7 @@ doi = {10.1137/15M1020575},
 }
 
 @misc{dropbox,
-  title = {Our journey to type checking 4 million lines of Python | Dropbox Tech Blog},
+  title = {{Our journey to type checking 4 million lines of Python | Dropbox Tech Blog}},
   howpublished = {\url{https://blogs.dropbox.com/tech/2019/09/our-journey-to-type-checking-4-million-lines-of-python/}},
   note = {(Accessed on 2020-01-20)}
 }
@@ -184,4 +199,17 @@ doi = {10.1137/15M1020575},
   title = {{TypeScript - JavaScript that scales.}},
   howpublished = {\url{https://www.typescriptlang.org/}},
   note = {(Accessed on 2020-01-19)}
+}
+
+@inproceedings{type-analysis-for-javascript,
+  author = "Jensen, Simon Holm and M{\o}ller, Anders and Thiemann, Peter",
+  editor = "Palsberg, Jens and Su, Zhendong",
+  title = "Type Analysis for JavaScript",
+  booktitle = "Static Analysis",
+  year = "2009",
+  publisher = "Springer Berlin Heidelberg",
+  address = "Berlin, Heidelberg",
+  pages = "238--255",
+  abstract = "JavaScript is the main scripting language for Web browsers, and it is essential to modern Web applications. Programmers have started using it for writing complex applications, but there is still little tool support available during development.",
+  isbn = "978-3-642-03237-0"
 }
