@@ -398,35 +398,35 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 タイポや未定義エラーを検出できる可能性があるものの，
 解析の正確性は大きく下がらざるを得ない．
 
-% REVIEW: false positiveは静的解析の一般的な性質なので，いらないかも
-\paragraph{false positiveな報告}
-
-前述したように，抽象解釈は実際にプログラムを実行するよりも有用な情報を引き出せる場合もあるが，
-それとは逆に実際のプログラム実行では起こりえないエラーを報告してしまう場合がある．
-
-具体例として以下のようなRubyプログラムを考える．
-
-\inputminted[frame=lines, linenos]{ruby}{src/false_positive.rb}
-
-2行目の条件と10行目の条件は同一の\verb|n|に対して等価であるため，
-\verb|n|が\verb|Integer|であれば，
-11行目の\verb|foo(n)|の返り値型は\verb|Integer|であり，
-13行目の\verb|foo(n)|の返り値型は\verb|String|となるため，
-このプログラムはエラーなく終了する．
-
-一方ruby-type-profilerは2行目および10行目の分岐において，
-\verb|n|の型レベルの情報（この場合であれば\verb|Integer|）しかもたないため，
-分岐の条件を正確に評価することができず，抽象解釈の状態を単純に分岐させる．
-つまり，11行目および13行目の\verb|foo(n)|の返り値型は
-\verb|Integer|\textbf{または}\verb|String|になりうるとして解析するため，
-それぞれの行で\verb|Integer|型と\verb|String|型の変数を受け取るメソッド呼び出し
-\verb|+|が存在しないことをエラーとして報告してしまう\footnote{
-  Ruby 2.6.5を用いて\date{\today}でのruby-type-profilerで動作確認を行った:\
-  \url{https://github.com/mame/ruby-type-profiler/tree/31b43adfbf0320b820dbd2c3a766efb2825072a4}
-}．
-
-ただ，こうしたfalse positiveなエラー報告は，いわば静的解析の保守性に起因するものであり，
-型プロファイリングに限らずその他の静的なプログラム解析に共通する問題点ではある．
+% % REVIEW: もう一度入れる？ TypeProfiler.jlでのfalse positiveの扱い方次第かも
+% \paragraph{false positiveな報告}
+%
+% 前述したように，抽象解釈は実際にプログラムを実行するよりも有用な情報を引き出せる場合もあるが，
+% それとは逆に実際のプログラム実行では起こりえないエラーを報告してしまう場合がある．
+%
+% 具体例として以下のようなRubyプログラムを考える．
+%
+% \inputminted[frame=lines, linenos]{ruby}{src/false_positive.rb}
+%
+% 2行目の条件と10行目の条件は同一の\verb|n|に対して等価であるため，
+% \verb|n|が\verb|Integer|であれば，
+% 11行目の\verb|foo(n)|の返り値型は\verb|Integer|であり，
+% 13行目の\verb|foo(n)|の返り値型は\verb|String|となるため，
+% このプログラムはエラーなく終了する．
+%
+% 一方ruby-type-profilerは2行目および10行目の分岐において，
+% \verb|n|の型レベルの情報（この場合であれば\verb|Integer|）しかもたないため，
+% 分岐の条件を正確に評価することができず，抽象解釈の状態を単純に分岐させる．
+% つまり，11行目および13行目の\verb|foo(n)|の返り値型は
+% \verb|Integer|\textbf{または}\verb|String|になりうるとして解析するため，
+% それぞれの行で\verb|Integer|型と\verb|String|型の変数を受け取るメソッド呼び出し
+% \verb|+|が存在しないことをエラーとして報告してしまう\footnote{
+%   Ruby 2.6.5を用いて\date{\today}でのruby-type-profilerで動作確認を行った:\
+%   \url{https://github.com/mame/ruby-type-profiler/tree/31b43adfbf0320b820dbd2c3a766efb2825072a4}
+% }．
+%
+% ただ，こうしたfalse positiveなエラー報告は，いわば静的解析の保守性に起因するものであり，
+% 型プロファイリングに限らずその他の静的なプログラム解析に共通する問題点ではある．
 
 \paragraph{抽象化の程度とスケーラビリティ}
 
@@ -477,7 +477,7 @@ Juliaプログラム中に含まれる，シンタックスレベルでの解析
 フィールド\verb|bar|が定義されていないことに起因するエラーが発生する．
 しかし，StaticLint.jlはこのプログラムに含まれるエラーを報告しない\footnote{
   \date{\today}時点でのJuliaレポジトリのmasterブランチからビルドしたJuliaを用いて，
-  StaticLint.jlがlinterとして使用されているjulia-vscode v0.13.1上で動作確認を行った:\
+  StaticLint.jl v3.0.0がlinterとして使用されているjulia-vscode v0.13.1上で動作確認を行った:\
   \url{https://github.com/julia-vscode/julia-vscode}
 }．
 というのは，関数\verb|get_bar|の定義だけを見るとその引数\verb|foo|として実際にどのような

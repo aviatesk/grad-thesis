@@ -14,4 +14,4 @@ def bar(n)
   end
 end
 
-bar(1) # here ruby-type-profiler ends up reporting potential errors
+bar(1) # here ruby-type-profiler ends up reporting false positive errors
