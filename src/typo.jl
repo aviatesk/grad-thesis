@@ -27,7 +27,7 @@ end
 struct F2 <: Foo
   baz # typo
 end
-bar(foo::Foo) = foo.bar
+get_bar(foo::Foo) = foo.bar
 
-bar(F1(1)) # no error
-bar(F2(1)) # error because of undefined field `bar`
+get_bar(F1(1)) # no error
+get_bar(F2(1)) # error because of undefined field `bar`

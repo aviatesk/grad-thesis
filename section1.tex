@@ -198,7 +198,9 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 科学計算の各分野におけるドメイン特化的な記法を単一の汎用言語のシンタックスの中で表現することができる\cite{jeff-phd}．
 
 \footnotetext{
-  こうしたパースタイムにおけるマクロ展開によるシンタックスレベルのメタプログラミングの他，
+  こうしたパースタイムにおけるマクロ展開
+  （セクション~\ref{subsubsection:eval-process}参照）
+  によるシンタックスレベルのメタプログラミングの他，
   関数のコンパイル時に引数の型情報を用いて新たにコードを生成しそれを実行するstaged programmingも可能である．
   Juliaのstaged programmingは上述したgeneric functionのdispatchのメカニズムを用いた非常に自然な言語機能として提供されている．
   コードの生成する関数自身がその他のgeneric functionと同じように呼び出され，
@@ -213,36 +215,45 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 % TODO: evalだけ？
 \verb|eval|のように実行時の値がなければ原理的に解析が不可能なメタプログラミング機能が存在する他，
 マクロを含むプログラムの正確な意味を得るためには，
-マクロ展開を行った後のプログラムに対する解析を行う必要があるが，
+マクロ展開を行った後のプログラム
+（セクション~\ref{subsubsection:eval-process}参照）
+に対する解析を行う必要があるが，
 マクロ展開にかかるプロセスは静的解析の実装における1つの障壁になりうる\ref{paragraph:analyse-code-including-macro}
 からである．
 
-% % REVIEW: ここでよい？
-% \subsubsection*{Juliaの実行プロセス}
-%
-% 最後に確認として，Juliaプログラムが実行される大まかなプロセスを簡単にまとめておく．
-%
-% \begin{enumerate}
-%   \item プログラムをパースしsurface AST\footnote{
-%     ASTは\textbf{"Abstract Syntax Tree"}（抽象構文木）の略．
-%     素のJuliaプログラムを，
-%     メタプログラミングにおいて扱いやすいTreeライクなデータ構造に変換したもの．
-%   }を得る
-%   \item マクロ\ref{subsubsection:metaprogramming}を展開する（\textbf{マクロ展開}）
-%   \item lowering\footnote{
-%     ここでloweringとは，型推論などの解析がしやすいように，
-%     マクロ展開後のsurface ASTを，
-%     \href{https://docs.julialang.org/en/latest/devdocs/ssair/}{SSA形式}
-%     の\textbf{lowered form}
-%     （またはIR (Intermediate Representation，中間表現）と呼ぶ）
-%     にさらに変換することを指す．
-%   }を行いlowered formを得る
-%   \item 3で得られたlowered formに対して型推論と最適化を行い，typed lowered formを得る
-%   \item 4で得られたtype lowered formからLLVM命令列を生成する
-%   \item LLVMがnative codeを生成する
-%   \item コンピュータがnative codeを実行する
-% \end{enumerate}
+% REVIEW: ここでよい？
+\subsubsection{Juliaの実行プロセスと中間表現} \label{subsubsection:eval-process}
 
+最後に，以降の説明を容易にするため，Juliaプログラムが実行されるプロセスを大まかにまとめ，
+各実行段階におけるプログラムの中間表現を指す用語を導入する\cite{eval-of-julia-code, julia-asts}．\\
+
+以下の操作は全て，実行されるプログラムにおけるそれぞれのコード片
+（Juliaプログラムの実行における単位となる各コード部分）に対して行われるものである．
+
+\begin{enumerate}
+  \item コード片をパースし\textbf{surface AST}\footnote{
+          "AST"は"Abstract Syntax Tree"（抽象構文木）の略．
+        }を得る．
+  \item モジュールの使用や型の定義などの"toplevel action"はインタープリタにより実行される．
+        以下は関数呼び出しなど"toplevel action"ではない場合の実行プロセスとする．
+  \item surface ASTに含まれるマクロを全て展開（\textbf{マクロ展開}）し，
+        さらに\textbf{lowering}\footnote{
+          ここで"lowering"とは，型推論などの解析がしやすいように，
+          マクロ展開後のsurface ASTを
+          \href{https://docs.julialang.org/en/latest/devdocs/ssair/}{SSA形式}
+          を取るlowered form（または単にIR，Intermediate Representationと呼ぶ）
+          にさらに変換することを指す．
+        }を行い\textbf{lowered form}を得る．
+  \item 簡単なヒューリスティック\footnote{
+          \url{https://github.com/JuliaLang/julia/blob/master/src/toplevel.c\#L588-L819}
+        }を用いて
+        lowered formをインタープリタにより実行するか，JITコンパイルを行うかを決定する．
+        以下はJITコンパイルされる場合のプロセスとする．
+  \item lowered formに対して型推論と最適化を行い，\textbf{typed lowered form}を得る
+  \item type lowered formからLLVM命令列を生成する
+  \item LLVMがnative codeを生成する
+  \item native codeが実行される
+\end{enumerate}
 
 \subsection{先行研究}
 
@@ -351,9 +362,8 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 などの恩恵が期待される\footnotemark[\value{footnote}]．
 \footnotetext{
   コード理解の応用例として，
-  遠藤ら\cite{ruby-progress-report}は型プロファイラの出力を，
-  上述の漸進的型付けによる型検査で必要となる
-  型シグネチャとして利用できる可能性を指摘している．
+  遠藤らは型プロファイラの出力を上述の漸進的型付けによる型検査で必要となる
+  型シグネチャとして利用できる可能性を指摘している\cite{ruby-progress-report}．
 }
 解析の正確性と実行速度は抽象化の程度に依存し，トレードオフをなす．
 
@@ -411,7 +421,7 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 \verb|Integer|\textbf{または}\verb|String|になりうるとして解析するため，
 それぞれの行で\verb|Integer|型と\verb|String|型の変数を受け取るメソッド呼び出し
 \verb|+|が存在しないことをエラーとして報告してしまう\footnote{
-  Ruby 2.6.5を用いて2020年1月24日時点でのruby-type-profilerで動作確認を行った:\
+  Ruby 2.6.5を用いて\date{\today}でのruby-type-profilerで動作確認を行った:\
   \url{https://github.com/mame/ruby-type-profiler/tree/31b43adfbf0320b820dbd2c3a766efb2825072a4}
 }．
 
@@ -433,4 +443,69 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 実用的に必要な解析の正確性を保ちつつ，同時に実用に耐え得るスケーラビリティも保てるように
 抽象化の程度を調整する必要がある．
 
+\subsubsection{現行のエコシステムにおけるエラーチェッカー: StaticLint.jl} \label{subsubsection:staticlint}
 
+StaticLint.jl~\cite{staticlint}は
+Juliaプログラムに対する静的な解析を行いエラーを検出する，
+主にエディタのlinting機能のバックエンドとして使用されることを想定したパッケージである．
+
+Juliaプログラム中に含まれる，シンタックスレベルでの解析により検出可能なエラーを，
+\date{\today}現在のJuliaエコシステムにおいて最も正確に検出することができ，
+また，編集中のコードに対してリアルタイムにlintingした結果をフィードバックすることができる
+程度のパフォーマンスを備えている．
+
+ここで，シンタックスレベルの解析とは，surface AST~\ref{subsubsection:eval-process}
+の段階のプログラム表現から得られる情報を用いた解析を意味し，
+つまりStaticLint.jlは実行プロセス3以降のプロセスに相当する解析は行わない．
+
+解析をシンタックスレベルに留めることで，編集中のコードに対するlinterとして機能し得る
+パフォーマンスを獲得している一方，
+以下で例にあげるような型レベルのエラーやマクロ展開に伴うエラーは検知できない．
+
+\paragraph{シンタックスレベルの解析で検知できないエラー} \label{paragraph:syntax-analysis-limitation}
+
+シンタックスレベルでの解析では検知できないエラーは様々あり，
+以下のような非常に簡単なtypoも，型レベルでの解析を行わない場合，検出できない．
+
+\begin{listing}[ht]
+  \inputminted[frame=lines, linenos, firstnumber=1, firstline=23, lastline=33]{julia}{./src/typo.jl}
+  \caption{typo}
+  \label{lst:target3}
+\end{listing}
+
+このコードでは6行目にtypoが含まれており，実行すると11行目において\verb|F2|型の変数に
+フィールド\verb|bar|が定義されていないことに起因するエラーが発生する．
+しかし，StaticLint.jlはこのプログラムに含まれるエラーを報告しない\footnote{
+  \date{\today}時点でのJuliaレポジトリのmasterブランチからビルドしたJuliaを用いて，
+  StaticLint.jlがlinterとして使用されているjulia-vscode v0.13.1上で動作確認を行った:\
+  \url{https://github.com/julia-vscode/julia-vscode}
+}．
+というのは，関数\verb|get_bar|の定義だけを見るとその引数\verb|foo|として実際にどのような
+型の変数が渡されるのか決定できず\footnote{
+  \texttt{Foo}がabstract typeであることに注意せよ．
+}，
+また上述したパフォーマンス上の理由から，
+エラーが発生する呼び出し\verb|get_bar(F2(1))|までも含めて解析する
+inter-proceduralなプログラム解釈は行えないからである．
+
+\paragraph{マクロを含むコードの解析} \label{paragraph:analyse-code-including-macro}
+
+同様にパフォーマンス上の理由からStaticLint.jlは完全なマクロ展開をサポートしていない\footnote{
+  パッケージ著者と私信にて確認:\\
+  \url{https://github.com/julia-vscode/StaticLint.jl/pull/64\#issuecomment-575801768}
+}．
+マクロ展開ではマクロが使われている場所とマクロの定義式の両方を参照しなくてはならず，
+ここでもinter-proceduralなプログラム解釈が必要となる．
+
+現状ではエコシステムにおける重要度の高いパッケージのマクロのみを
+それぞれ個別にspecial caseすることで部分的に対応している\footnote{
+  例えば，listing~\ref{lst:target2}の3行目の\texttt{@variable}マクロは，
+  引数式　\jlinline{0 <= x <= 2} \textbf{だけ}を見ると，
+  まだ定義されていない変数\texttt{x}を参照しているように見えるが，
+  実際にはマクロ展開時に，引数式のそれぞれの形式に対応してJuMP.jlの内部的なデータとして
+  変数（この場合は\texttt{x}）を定義するようなコードを生成するためもちろんエラーは起きない．
+  一方StaticLint.jlはマクロ展開をサポートしていないため，
+  v3.0.0まではこの場合に未定義変数の参照エラーを報告されていたが，
+  現在は対応されている:\\
+  \url{https://github.com/julia-vscode/StaticLint.jl/pull/72}
+}．
