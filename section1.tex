@@ -25,7 +25,7 @@ Juliaプログラムを型レベルで静的解析する必要性と，
 セクション~\ref{section:evaluation-and-issues}において，それらのコード例は
 型プロファイラを用いて解析される．
 
-\subsubsection{generic function} \label{subsubsection: generic-function}
+\subsubsection{generic function} \label{subsubsection:generic-function}
 
 Juliaは\textbf{generic function（総称関数）}に対するcode specializationとcode selectionにより，
 動的な多相性を保ちつつ，良好なパフォーマンスを得ている\cite{jeff-phd}．
@@ -160,7 +160,7 @@ dispatchされ得るメソッドが存在しないことに起因するエラー
 あくまで補助的に用いられるものであり，静的解析のために型アノテーションをつけることにより，
 元のgeneric functionが持っている多相性が損なわれることがあってはならない．
 
-\subsubsection{メタプログラミング} \label{subsubsection: metaprogramming}
+\subsubsection{メタプログラミング} \label{subsubsection:metaprogramming}
 
 また，Juliaはそのメタプログラミング機能によっても特徴付けられる．
 
@@ -214,7 +214,7 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 \verb|eval|のように実行時の値がなければ原理的に解析が不可能なメタプログラミング機能が存在する他，
 マクロを含むプログラムの正確な意味を得るためには，
 マクロ展開を行った後のプログラムに対する解析を行う必要があるが，
-マクロ展開にかかるプロセスは静的解析の実装における1つの障壁になりうる\ref{analyze-code-with-macro}
+マクロ展開にかかるプロセスは静的解析の実装における1つの障壁になりうる\ref{paragraph:analyse-code-including-macro}
 からである．
 
 % % REVIEW: ここでよい？
@@ -228,7 +228,7 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 %     素のJuliaプログラムを，
 %     メタプログラミングにおいて扱いやすいTreeライクなデータ構造に変換したもの．
 %   }を得る
-%   \item マクロ\ref{subsubsection: metaprogramming}を展開する（\textbf{マクロ展開}）
+%   \item マクロ\ref{subsubsection:metaprogramming}を展開する（\textbf{マクロ展開}）
 %   \item lowering\footnote{
 %     ここでloweringとは，型推論などの解析がしやすいように，
 %     マクロ展開後のsurface ASTを，
@@ -266,7 +266,7 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 また，最後に現行のJuliaエコシステムにおける静的解析によるバグ検出の試みの例として，
 StaticLint.jlを紹介し，本論文の取り組みと比較する上で重要な相違点を説明する．
 
-\subsubsection{追加的な型シグネチャによる型検査} \label{prev-research:type-check-with-annotation}
+\subsubsection{追加的な型シグネチャによる型検査} \label{subsubsection:type-check-with-annotation}
 
 % TODO: 型安全（型健全）の正確な意味を調べる
 
@@ -336,7 +336,7 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 後者に関しては，後述する型プロファイリングなど，素の動的型付け言語プログラムからその型情報を
 自動生成する手法を組み合わせて用いることで改善できる可能性がある\footnotemark．
 
-\subsubsection{抽象解釈による型プロファイリング} \label{prev-research:type-profiling}
+\subsubsection{抽象解釈による型プロファイリング} \label{subsubsection:type-profiling}
 
 % TODO: もっとvalidな言い方
 「型プロファイリング」は素の動的型付け言語で記述されたプログラムを受け取り，
@@ -361,7 +361,7 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 つまり，関数やメソッドを定義するプログラムを入力とするだけでは解析を行うことができず，
 それらを起動するエントリポイントとなるトップレベルのスクリプトも含めて与えられることにより解析を行うことが可能となる．
 
-また，追加的な型シグネチャによる型検査~\ref{prev-research:type-check-with-annotation}とは異なり，
+また，追加的な型シグネチャによる型検査~\ref{subsubsection:type-check-with-annotation}とは異なり，
 この方式の先行事例は比較的少なく，ruby-type-profiler~\cite{ruby-type-profiler}や
 "Type Analysis For JavaScript"~\cite{type-analysis-for-javascript}などがあるが，
 いまだ広く実用に用いられているものはないように思われる．\
