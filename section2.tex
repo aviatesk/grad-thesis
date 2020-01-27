@@ -64,7 +64,11 @@ generic functionが呼ばれた時，そのメソッドの中から（全ての�
 Julia v1.5においては\verb|sum|関数には標準ライブラリを含めて計14個のメソッドが与えられている．
 そのうちの3つを抜粋する（読みやすさのためやや改変している）．
 
-\inputminted[frame=lines, linenos]{julia}{src/sums_method.jl}
+\begin{listing}[ht]
+  \inputminted[frame=lines, linenos]{julia}{src/sums_method.jl}
+  \caption{definition of \texttt{sum}}
+  \label{lst:sums}
+\end{listing}
 
 1行目のメソッドが最もgenericな場合を扱う実装であり，
 2行目のメソッドがgenericな配列型に対する実装，
