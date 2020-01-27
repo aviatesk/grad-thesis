@@ -8,7 +8,7 @@
 本論文において取りうるアプローチを検討する．
 
 
-\subsection{Julia言語の特徴と静的解析} \ref{subsection:2-1}
+\subsection{Julia言語の特徴と静的解析} \label{subsection:2-1}
 
 % REVIEW: オブジェクト指向言語であることに触れる必要ある？曖昧では
 数あるJuliaの特徴の中でも，以下の2点はJuliaプログラムの静的な型解析を考える上で重要である．
@@ -219,9 +219,9 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 % TODO: evalだけ？
 \verb|eval|のように実行時の値がなければ原理的に解析が不可能なメタプログラミング機能が存在する他，
 マクロを含むプログラムの正確な意味を得るためには，
-マクロ展開を行った後のプログラム（小小節\ref{subsubsection:eval-process}参照）
-に対する解析を行う必要があるが，
-マクロ展開にかかるプロセスは静的解析の実装における1つの障壁になりうる\ref{paragraph:analyse-code-including-macro}
+マクロ展開を行った後のプログラムに対する解析を行う必要があるが，
+マクロ展開にかかるプロセスは静的解析の実装における1つの障壁になりうる
+（小々節\ref{paragraph:analyse-code-including-macro}参照）
 からである．
 
 % REVIEW: ここでよい？
@@ -374,7 +374,7 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 つまり，関数やメソッドを定義するプログラムを入力とするだけでは解析を行うことができず，
 それらを起動するエントリポイントとなるトップレベルのスクリプトも含めて与えられることにより解析を行うことが可能となる．
 
-また，追加的な型シグネチャによる型検査~\ref{subsubsection:type-check-with-annotation}とは異なり，
+また，追加的な型シグネチャによる型検査（\ref{subsubsection:type-check-with-annotation}）とは異なり，
 この方式の先行事例は比較的少なく，ruby-type-profiler~\cite{ruby-type-profiler}や
 "Type Analysis For JavaScript"~\cite{type-analysis-for-javascript}などがあるが，
 いまだ広く実用に用いられているものはないように思われる．\
@@ -457,7 +457,8 @@ Juliaプログラム中に含まれる，シンタックスレベルでの解析
 また，編集中のコードに対してリアルタイムにlintingした結果をフィードバックすることができる
 程度のパフォーマンスを備えている．
 
-ここで，シンタックスレベルの解析とは，surface AST~\ref{subsubsection:eval-process}
+ここで，シンタックスレベルの解析とは，surface AST
+（小々節\ref{subsubsection:eval-process}参照）
 の段階のプログラム表現から得られる情報を用いた解析を意味し，
 つまりStaticLint.jlは実行プロセス3以降のプロセスに相当する解析は行わない．
 
