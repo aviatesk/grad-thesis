@@ -1,14 +1,14 @@
 % !TeX root = ./main.tex
 
-\section{静的な型エラー検出を考える上でのJulia言語の考察と先行研究}
+\section{静的な型エラー検出を考える上でのJulia言語の考察と先行研究} \label{section:2}
 
 % TODO: もっといい感じの枕詞
-このセクションではまずJuliaの重要な性質を概観し，その静的解析に求められる要件を確認する．
+この節ではまずJuliaの重要な性質を概観し，その静的解析に求められる要件を確認する．
 その後，他の動的言語における静的解析によるエラーチェックの取り組みを紹介し，
 本論文において取りうるアプローチを検討する．
 
 
-\subsection{Julia言語の特徴と静的解析}
+\subsection{Julia言語の特徴と静的解析} \ref{subsection:2-1}
 
 % REVIEW: オブジェクト指向言語であることに触れる必要ある？曖昧では
 数あるJuliaの特徴の中でも，以下の2点はJuliaプログラムの静的な型解析を考える上で重要である．
@@ -22,7 +22,7 @@
 Juliaプログラムを型レベルで静的解析する必要性と，
 その際にどのような困難を生じ得るかを
 コード例と共に紹介する．
-セクション~\ref{section:evaluation-and-issues}において，それらのコード例は
+\ref{section:4}節において，それらのコード例は
 型プロファイラを用いて解析される．
 
 \subsubsection{generic function} \label{subsubsection:generic-function}
@@ -199,11 +199,11 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 
 \footnotetext{
   こうしたパースタイムにおけるマクロ展開
-  （セクション~\ref{subsubsection:eval-process}参照）
+  （小節\ref{subsubsection:eval-process}参照）
   によるシンタックスレベルのメタプログラミングの他，
   関数のコンパイル時に引数の型情報を用いて新たにコードを生成しそれを実行するstaged programmingも可能である．
   Juliaのstaged programmingは上述したgeneric functionのdispatchのメカニズムを用いた非常に自然な言語機能として提供されている．
-  コードの生成する関数自身がその他のgeneric functionと同じように呼び出され，
+  コードを生成する関数自身がその他のgeneric functionと同じように呼び出され，
   生成されたコードは通常の関数呼び出しと同じようにJITコンパイルによる最適化が行われた後，実行される．
 }
 
@@ -215,8 +215,7 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 % TODO: evalだけ？
 \verb|eval|のように実行時の値がなければ原理的に解析が不可能なメタプログラミング機能が存在する他，
 マクロを含むプログラムの正確な意味を得るためには，
-マクロ展開を行った後のプログラム
-（セクション~\ref{subsubsection:eval-process}参照）
+マクロ展開を行った後のプログラム（小小節\ref{subsubsection:eval-process}参照）
 に対する解析を行う必要があるが，
 マクロ展開にかかるプロセスは静的解析の実装における1つの障壁になりうる\ref{paragraph:analyse-code-including-macro}
 からである．
@@ -255,7 +254,7 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
   \item native codeが実行される
 \end{enumerate}
 
-\subsection{先行研究}
+\subsection{先行研究} \label{subsection:prev-reseaches}
 
 % TODO: もっと厳密に理解 & 正確な用語を用いる: 少なくとPPLまで
 
@@ -382,7 +381,7 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 
 一方で抽象解釈に伴う困難は様々に存在する．
 ここではruby-type-profiler~\cite{ruby-progress-report, ruby-type-profiler}で報告されているものを中心に紹介する．
-これらの問題点は後述のTypeProfiler.jlの設計~\ref{section:type-profiler-design}
+これらの問題点は後述のTypeProfiler.jlの設計（\ref{section:3}節）
 においても重要となる．
 
 % IDEA: 入力となるプログラムが実行可能でなければならないことにも触れる？
