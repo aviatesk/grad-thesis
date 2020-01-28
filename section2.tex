@@ -2,7 +2,6 @@
 
 \section{静的な型エラー検出を考える上でのJulia言語の考察と先行研究} \label{section:2}
 
-% TODO: もっといい感じの枕詞
 この節ではまずJuliaの重要な性質を概観し，その静的解析に求められる要件を確認する．
 その後，他の動的言語における静的解析によるエラーチェックの取り組みを紹介し，
 本論文において取りうるアプローチを検討する．
@@ -51,13 +50,18 @@ LLVMフレームワーク\cite{LLVM}を用いた最適化が行われ，
 プログラマはgeneric functionの定義時に，引数に型アノテーションを付けることで，その実装
 （これを\textbf{メソッド}と呼ぶ）が適用され得る引数型組の集合を記述することができる．
 generic functionが呼ばれた時，そのメソッドの中から（全ての引数の実行時の型を考慮した上で）
-その引数型組に対し最も「特化した\footnotemark」ものが選択され実行される．
+その引数型組に対し最も「特化した（"specific"\footnotemark な）」ものが選択され実行される．
 この\textbf{dynamic multiple dispatch}によるメソッドの選択を
 \textbf{code selection}と呼ぶ．
 
 \footnotetext{
-  % TODO: describe what "specialized"
-  「特化した」（specialized）メソッドの定義が実は曖昧であることに触れておく．
+  この「最も"specific"なメソッド」の選択はJuliaの言語機能の中でも特に重要なものの1つであり，
+  generic functionのメソッドテーブルを引数型組の"specificity"によりソートすることにより
+  自然に実装することができる．
+  しかし，一方の引数型組がもう一方のsubtypeである場合などの"specificity"が明らかな組み合わせだけではなく，
+  Juliaの型システム内で表現しうる\textbf{全ての}引数型組の組み合わせに対して適用できる"specificity"は自明ではない．
+  そのアルゴリズムは現在のところ経験的に実装されており，
+  その形式はinformalにしか与えられていない\cite{jeff-phd}．
 }
 
 具体例として，\verb|sum|関数に対するcode selectionを考えてみる．
@@ -107,6 +111,8 @@ Julia v1.5においては\verb|sum|関数には標準ライブラリを含めて
   コンパイラがコードを最適化する上でのヒントを与えるというものがある\cite{type-annotation}．
   コンパイラはアノテーションされた型情報を使ってコード生成を行い，
   実行時にはアノテーションされた型と実際の型が一致することを確かめるアサーションが行われる．
+  % IDEA: assignmentのlhsに::が付けられた場合は，
+  % 実行時型をensureする（必要に応じて\texttt{convert}する）ことも触れる？
 }．
 
 以上のような言語設計により，
