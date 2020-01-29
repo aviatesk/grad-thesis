@@ -31,7 +31,7 @@ Juliaは\textbf{generic function（総称関数）}に対するcode specializati
 
 % code specialization
 ここで，generic functionは同一の名前を持ち多相的な振る舞いをする関数であり，
-実行時にある引数を伴ってはじめて呼ばれたタイミングでコンパイル
+実行時にある引数型を伴ってはじめて呼ばれたタイミングでコンパイル
 （これを\textbf{JITコンパイル}，または単に\textbf{JIT}とよぶ）される．
 JITの過程においては，まず引数の型情報を用いてその関数呼び出しに対する型推論が行われ，
 その呼び出し内で生じる関数（正確にはメソッド）呼び出しのコンパイルタイムにおける決定や，
@@ -44,6 +44,9 @@ LLVMフレームワーク\cite{LLVM}を用いた最適化が行われ，
 例えば，Juliaに標準で備わっている\verb|sum|関数の呼び出し\verb|sum([1, 0, 1])|は
 \verb|Array{Int,1}|（\verb|1|は配列の次元が1次元であることを示す）という引数型に対し最適化されたマシンコードを生成し，
 引数型\verb|Array{Float64,1}|を伴う呼び出し\verb|sum([1., 0., 1.])|はまた別に最適化されたコードを生成する．
+
+% TODO: 全ての引数型に対してspecializeするわけではないことを説明
+% 過剰なcode generationを避けるために，ヒューリスティックが用いられる
 
 % code selection
 また，1つのgeneric functionは複数の実装を持つことができ，
@@ -151,7 +154,9 @@ Juliaの洗練された言語設計によりそれらのコードは多くの場
 \end{listing}
 
 このプログラムは一見するとバグが含まれていないように見え，実際に\verb|ARGS|の長さが1以上の時は正常に動作する．
-しかし，\verb|ints|の型が\verb|Array{Any,1}|であるため，\verb|ARGS|が空の配列である場合に，
+しかし，\verb|ints|の型が\verb|Array{Any,1}|であるため
+\footnotemark % TODO: たぶん3章でも説明することになる？
+，\verb|ARGS|が空の配列である場合に，
 4行目の\verb|sum(ints)|の内部における関数呼び出し\verb|zero(T)|
 （\verb|T|は\verb|sum|の引数の要素型，この場合は\verb|Any|である）
 において， \verb|zero(::Type{Any})|という呼び出しのシグネチャが
@@ -160,6 +165,13 @@ dispatchされ得るメソッドが存在しないことに起因するエラー
 2行目を \jlinline{ints = Int[]} として\verb|ints|の要素型まで指定して定義することでエラーは避けられるものの，
 \verb|sum|が引数の要素型に制限を設けず多相的に定義されている以上，
 \verb|sum|がgenericな配列型に対して動作すると期待するプログラマがこうしたエラーを事前に予測することは簡単ではない．
+
+\footnotetext{
+  Juliaは現在のところ逆方向の型推論（"backwards type flow"）を行うことができない\cite{julia-2012}．
+  コンテナ型の変数のパラメータ型を変数宣言以降のコードの操作から
+  推論することはできず，この場合\texttt{ints}には
+  \texttt{[]}の型\texttt{Array\{Any,1\}}がそのまま与えられる．
+}
 
 また，こうしたエラーを実行時前に静的に検出することも容易ではない．
 というのは，一般にJuliaのgeneric functionの挙動は，その呼び出し時に与えられた引数型に従って決定されるため，
@@ -380,10 +392,12 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 つまり，関数やメソッドを定義するプログラムを入力とするだけでは解析を行うことができず，
 それらを起動するエントリポイントとなるトップレベルのスクリプトも含めて与えられることにより解析を行うことが可能となる．
 
-また，追加的な型シグネチャによる型検査（\ref{subsubsection:type-check-with-annotation}）とは異なり，
-この方式の先行事例は比較的少なく，ruby-type-profiler~\cite{ruby-type-profiler}や
-"Type Analysis For JavaScript"~\cite{type-analysis-for-javascript}などがあるが，
-いまだ広く実用に用いられているものはないように思われる．\
+% TODO: type-inference-for-javascriptを読んでより内容を深める
+
+また，追加的な型シグネチャによる型検査（\ref{subsubsection:type-check-with-annotation}）
+とは異なり，この方式の先行事例は比較的少なく，
+RubyやJavaScriptでの取り組み~\cite{ruby-type-profiler, type-analysis-for-javascript, type-inference-for-javascript}
+があるが，いまだ広く実用に用いられているものはないように思われる．\
 
 この方式における利点は次の1点に集約される．
 つまり，型プロファイラは追加的な型注釈を必要とせずに行われるため，

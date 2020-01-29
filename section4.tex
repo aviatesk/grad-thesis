@@ -6,8 +6,21 @@
 
 \begin{itemize}
   \item これまでに紹介したコードに対するレポート
-  \item self profiling ? % needs replacing Core variables, maybe hard to implement in soon
+  \item self profiling ?\\
+        \verb|Core|モジュールの型を，自前のそれと置き換える必要がある: 間に合わなさそう．
   \item ruby-type-profilerとの比較
 \end{itemize}
 
 \subsection{今後の課題}
+
+\subsubsection{built-in functionの返り値型}
+
+Juliaの型推論システムは，もともとエラー検出を目的に作られていない．
+型推論がbuilt-in functionに到達したとき，もし実行時エラーが起こりうる引数型組であってもその情報を伝播させない．
+一方，型プロファイラは型エラーの検出を目的としているので，よりconservativeにエラーが生じ得る可能性を報告したい．
+
+\subsubsection{マクロ展開に対するエラー検出}
+
+% - 関数に対するプロファイリングと同じメカニズムを使うことができる
+% - IDEA: マクロが返す式の形と，マクロが使用されている部分の式の形の整合性を確かめることにより，マクロの使用の正しさをcheckする
+%   * 「式の形」はある種の型とみなせる
