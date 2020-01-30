@@ -372,7 +372,7 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 
 % TODO: もっとvalidな言い方
 「型プロファイリング」は素の動的型付け言語で記述されたプログラムを受け取り，
-プログラムの実行を型レベルに抽象化した上でトレース（抽象解釈）し，
+プログラムの実行を型レベルで\textbf{抽象解釈}~\cite{abstract-interpretation, scheme-for-automatic-inference}し，
 その過程で発見した型エラーやトレースされた型情報そのものを報告するような手法を指す．
 
 プログラムをそのまま実行するのではなくあくまで型レベルに抽象化した上で解釈することにより，

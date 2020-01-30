@@ -1,21 +1,5 @@
 %%% core %%%
 
-@article{julia-2012,
-  added-at = {2018-08-13T00:00:00.000+0200},
-  author = {Bezanson, Jeff and Karpinski, Stefan and Shah, Viral B. and Edelman, Alan},
-  biburl = {https://www.bibsonomy.org/bibtex/29ae29da4119dcbb50e9d129f56c22275/dblp},
-  ee = {http://arxiv.org/abs/1209.5145},
-  interhash = {af6bd6d700e06507d033ecf741910672},
-  intrahash = {9ae29da4119dcbb50e9d129f56c22275},
-  journal = {CoRR},
-  keywords = {dblp},
-  timestamp = {2018-08-14T12:24:08.000+0200},
-  title = {Julia: A Fast Dynamic Language for Technical Computing},
-  url = {http://dblp.uni-trier.de/db/journals/corr/corr1209.html#abs-1209-5145},
-  volume = {abs/1209.5145},
-  year = {2012}
-}
-
 % XXX: what is really appropriate ?
 @misc{ruby-progress-report,
   author = {遠藤 侑介 and 松本 宗太郎 and 上野 雄大 and 住井 英二郎 and 松本 行弘},
@@ -49,6 +33,22 @@
   url={https://dspace.mit.edu/handle/1721.1/99811}
 }
 
+@article{julia-2012,
+  added-at = {2018-08-13T00:00:00.000+0200},
+  author = {Bezanson, Jeff and Karpinski, Stefan and Shah, Viral B. and Edelman, Alan},
+  biburl = {https://www.bibsonomy.org/bibtex/29ae29da4119dcbb50e9d129f56c22275/dblp},
+  ee = {http://arxiv.org/abs/1209.5145},
+  interhash = {af6bd6d700e06507d033ecf741910672},
+  intrahash = {9ae29da4119dcbb50e9d129f56c22275},
+  journal = {CoRR},
+  keywords = {dblp},
+  timestamp = {2018-08-14T12:24:08.000+0200},
+  title = {Julia: A Fast Dynamic Language for Technical Computing},
+  url = {http://dblp.uni-trier.de/db/journals/corr/corr1209.html#abs-1209-5145},
+  volume = {abs/1209.5145},
+  year = {2012}
+}
+
 @MastersThesis{jeff-master,
  author = {Bezanson, Jeff},
  title = {Julia: An Efficient Dynamic Language for Technical Computing},
@@ -57,12 +57,59 @@
  url={https://dspace.mit.edu/handle/1721.1/74897}
 }
 
-@misc{inference-algorithm,
+@misc{jameson,
   author = {Nash, Jameson},
   title = {{Inference Convergence Algorithm in Julia – Julia Computing}},
-  howpublished = {\url{https://juliacomputing.com/blog/2016/04/04/inference-convergence.html#fnref:typesize:1}},
+  howpublished = {\url{https://juliacomputing.com/blog/2016/04/04/inference-convergence.html}},
   year = {2016},
   note = {(Accessed on 2020-01-22)}
+}
+
+@misc{jameson-revisited,
+  author = {Nash, Jameson},
+  title = {{Inference Convergence Algorithm in Julia - Revisited – Julia Computing}},
+  howpublished = {\url{https://juliacomputing.com/blog/2017/05/15/inference-converage2.html}},
+  note = {(Accessed on 2020-01-30)}
+}
+
+@inproceedings{abstract-interpretation,
+  author = {Cousot, Patrick and Cousot, Radhia},
+  year = {1977},
+  month = {01},
+  pages = {238-252},
+  title = {Abstract Interpretation: A Unified Lattice Model for Static Analysis of Programs by Construction or Approximation of Fixpoints},
+  doi = {10.1145/512950.512973}
+}
+
+@article{scheme-for-automatic-inference,
+  author = {Kaplan, Marc A. and Ullman, Jeffrey D.},
+  title = {A Scheme for the Automatic Inference of Variable Types},
+  year = {1980},
+  issue_date = {January 1980},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  volume = {27},
+  number = {1},
+  issn = {0004-5411},
+  url = {https://doi.org/10.1145/322169.322181},
+  doi = {10.1145/322169.322181},
+  journal = {J. ACM},
+  month = jan,
+  pages = {128--145},
+  numpages = {18}
+}
+
+@inproceedings{graph-free-data-flow-analysis,
+  author = {Mohnen, Markus},
+  title = {A Graph-Free Approach to Data-Flow Analysis},
+  year = {2002},
+  isbn = {3540433694},
+  publisher = {Springer-Verlag},
+  address = {Berlin, Heidelberg},
+  booktitle = {Proceedings of the 11th International Conference on Compiler Construction},
+  pages = {46--61},
+  numpages = {16},
+  series = {CC ’02}
 }
 
 %%% adapted from https://github.com/JuliaLang/julia/blob/master/CITATION.bib %%%
@@ -265,4 +312,18 @@
   pages = "238--255",
   abstract = "JavaScript is the main scripting language for Web browsers, and it is essential to modern Web applications. Programmers have started using it for writing complex applications, but there is still little tool support available during development.",
   isbn = "978-3-642-03237-0"
+}
+
+@article{milner,
+  title = "A theory of type polymorphism in programming",
+  journal = "Journal of Computer and System Sciences",
+  volume = "17",
+  number = "3",
+  pages = "348 - 375",
+  year = "1978",
+  issn = "0022-0000",
+  doi = "https://doi.org/10.1016/0022-0000(78)90014-4",
+  url = "http://www.sciencedirect.com/science/article/pii/0022000078900144",
+  author = "Robin Milner",
+  abstract = "The aim of this work is largely a practical one. A widely employed style of programming, particularly in structure-processing languages which impose no discipline of types, entails defining procedures which work well on objects of a wide variety. We present a formal type discipline for such polymorphic procedures in the context of a simple programming language, and a compile time type-checking algorithm W which enforces the discipline. A Semantic Soundness Theorem (based on a formal semantics for the language) states that well-type programs cannot “go wrong” and a Syntactic Soundness Theorem states that if W accepts a program then it is well typed. We also discuss extending these results to richer languages; a type-checking algorithm based on W is in fact already implemented and working, for the metalanguage ML in the Edinburgh LCF system."
 }

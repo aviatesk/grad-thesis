@@ -43,7 +43,7 @@ code selectionのメカニズムにおいて型アノテーションはJuliaプ�
 そのため，intra-proceduralな解析が可能な程度に引数型を限定できるような形で
 静的な型エラー検査を目的とした追加的な型アノテーションを与える場合，
 Juliaプログラムが本来持ちうる多相性を保つのは難しく，
-JuliaをJuliaたらしめる言語的特性を損なってしまうと考えられる．
+Juliaの言語機能を大きく損なってしまう可能性が高い．
 
 \footnotetext{
   型アノテーションを付けないことは，\texttt{Any}型のアノテーションを施すことと同義である．
@@ -54,12 +54,112 @@ JuliaをJuliaたらしめる言語的特性を損なってしまうと考えら�
   考えることもできる．
 }
 
-\subsection{Juliaの型推論システム}
 
-% - アルゴリズム
-% - 停止性
-% - 推論の正しさ -- runtime check いらないのか
+\subsection{Juliaの型推論システム} \label{subsection:julia-type-inference}
 
-\subsection{TypeProfiler.jlの設計}
+Juliaの実行過程においては，
+メソッド呼び出し時，与えられた引数組型に対するそのメソッドのcode specializationがまだ行われていない場合
+（つまりそのメソッドの，その引数型組に対する最適化されたコードのキャッシュがまだ存在しない場合），
+呼び出しの最適化を目的として型推論が行われ，型推論の結果に基づいて最適化が行われる
+（Juliaの実行プロセス~\ref{subsubsection:eval-process}参照）．
+
+Juliaのプログラムの式や変数の型は，プログラムを型レベルで抽象解釈することで推論される．
+Juliaの型推論に用いられている解析手法は元々，
+\cite{abstract-interpretation, scheme-for-automatic-inference}で提唱されたものであり，
+Bezansonらによる論文~\cite{jeff-phd, jeff-master, julia-2012}ではこの手法のことを指して，
+\textbf{data-flow analysis}という用語を用いており，以降本論文においても使用する．
+
+Juliaの型推論は，MLなどの静的型付け言語における型推論とは根本的に異なる．
+静的型付け言語においては通常，
+unificationベースの型推論\cite{milner}が用いられ，
+コンパイル時におけるプログラムの正しさの証明の一環として
+ソースレベルの型システムからでは自明に得られないプログラムの性質を発見するために推論が行われるのに対して，
+Juliaの型推論は，もとよりcode specializationによるパフォーマンスの向上の一環として，
+プログラムの性質を「できる限りの範囲で詳細に\cite{jeff-phd}」調べるために行われる．
+
+data-flow analysisは以下のような性質を持つ．
+
+\begin{enumerate}
+  \item 推論が柔軟である．
+        例えば，変数はプログラムの各時点において異なる型を持つことができ，
+        また推論により型は必ずしも決定されなくてもよいなど，
+        より動的型付けに適した性質を備えている．
+  \item 型システムが表現可能な型の数が有限でない場合においても，
+        wideningと呼ばれる手法を用いることでアルゴリズムの停止性を保つことができる．
+        また，ヒューリスティックを用いて推論中の型をナイーブな実装よりも早くより抽象的な型へ遷移させることで，
+        推論の収束を早めることができる．
+  \item 型推論の実装と言語仕様とを切り離すことが可能である．
+        % REVIEW: Juliaの型推論ルーチンを明示的に呼び出すようなコードの場合もこれで合ってる？
+        例えばJuliaにおいては，推論のcorrectnessを保つ限り，
+        型推論の結果によってJuliaプログラムの意味論が変わることはなく，
+        ただそのパフォーマンスが変わるだけである.
+        このことはつまり，
+        型推論のルーチンを改善しようとするときに言語仕様の変更を気にする必要がないことを意味し，
+        結果としてコンパイラの開発スピードを早めることができる．
+\end{enumerate}
+
+以下では，まずこのJuliaの型推論システムの基本的なアルゴリズムを説明する．
+その次にヒューリスティックを導入することによりこのアルゴリズムの停止性が与えられることを説明し，
+最後にJuliaの型推論ルーチンの推論結果のcorrectnessについて言及する．
+
+\subsubsection{アルゴリズム}
+
+Juliaの型推論は，\cite{graph-free-data-flow-analysis}で提案されたgraph freeな最大不動点計算の
+フレームワークを相互再帰関数も扱えるように拡張したアルゴリズムにより実装されている．
+
+\subsubsection{停止性とヒューリスティック} \label{subsubsection:inference-termination-and-heuristic}
+
+上記のアルゴリズムを使用したdata-flow analysisは以下の性質を満たす場合に，
+必ず収束し停止することが保証される\cite{graph-free-data-flow-analysis, jameson}．
+
+\begin{description}
+  \item [単調性] 2つの型をmergeしたときに必ずより抽象的な型にならなければならない．
+                また，data-flow analysisにおける関数呼び出しは単調でなければならない．
+                つまり引数型が抽象的であるほど，推論される返り値型も抽象的でなければならない．
+  \item [有限性] 型システムにおいて表現され得る型が有限である．
+\end{description}
+
+有限性に関して，
+Juliaの型システムは\verb|Union|型や\verb|Tuple|型，そしてコンテナ型の存在により，
+無限の型が作られ得る（型システムは高さが有限でないlatticeとして表される）ので，
+そのままではこの条件を満たさない．
+そこで，\textbf{widening}と呼ばれる手法を用いて
+型推論時におけるtype latticeの高さが有限となるように強制する．
+この時，ヒューリスティックを用いて推論中の型をより早く抽象的な型に遷移させることで，
+型推論自体の収束を早めている．
+
+\subsubsection{correctness} \label{subsubsection:inference-correctness}
+
+\begin{quote}
+  Dynamic type inference schemes obey a correctness property that inferred types
+  must subsume all possible run-time types.
+\end{quote}
+
+% NOTE: informalな証明であることに触れておく:
+
+\subsection{TypeProfiler.jlの設計と性質}
+
+\subsubsection{設計}
+
+% Juliaのinferenceとの違い:
+% - もともとはperformance
+% - inferenceがAnyが来たときにAnyを返す: inferenceの方で書く
+% - それに対応する必要がある
+
+% ruby-type-profilerとのルーチンの違い:
+% - 言語設計から生じる違いがある？
+%   * Ruby: 型はクラスになる <- コンテナ型はどうなる？
+%   * Julia: 様々な型がある
+% - 型システムの設計になる
+
+\subsubsection{性質}
+
+% lemma:
+% built-in callまで伝播したデータ型が，その呼び出しに対してvalidである場合，データ型エラーは起きない
+
+% 型が決定できる場合がどの程度あるのか
+% - 呼び出すコードが変わると
+
+% どのエラーが検知できて，できないのか
 
 % - precision vs. scalability
