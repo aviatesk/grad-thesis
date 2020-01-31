@@ -5,6 +5,7 @@
 \renewcommand\thefootnote{\arabic{footnote})}
 
 \usepackage[top=1in, bottom=1.5in, left=1in, right=1in]{geometry}
+\usepackage{authblk}
 \usepackage{listings}
 \usepackage[dvipdfmx]{hyperref}
 \usepackage{url}
@@ -16,18 +17,33 @@
 
 \begin{document}
 
+% cover
 \title{プログラミング言語Juliaにおける型推論を用いたバグ検出について}
 \author{門脇　宗平}
+\affil{京都大学　総合人間学部　認知情報学系専攻}
 \date{\today}
 \maketitle
-
+\vspace{\fill}
 \input{abstract}
+\vspace{\fill}
+\newpage
+
+% index, lists, thanks
+\setcounter{tocdepth}{3}
+\tableofcontents
+% \renewcommand\listoflistingscaption{List of profiling targets}
+% \listoflistings
+\input{thanks}
+\newpage
+
+% body
 \input{introduction}
 \input{section2}
 \input{section3}
 \input{section4}
 \input{conclusion}
 
+% reference
 \bibliography{main}
 \bibliographystyle{junsrt}
 

@@ -48,8 +48,7 @@ Juliaの言語機能を大きく損なってしまう可能性が高い．
 \footnotetext{
   型アノテーションを付けないことは，\texttt{Any}型のアノテーションを施すことと同義である．
   関数の引数に型アノテーションを施さないことは最もgenericな場合に対応するメソッドを定義する
-  ことを意味し，引数に型アノテーションを施すことは一般にそのメソッドの多相性を低下させる
-  （Listing~\ref{lst:sums}参照）．
+  ことを意味し，引数に型アノテーションを施すことは一般にそのメソッドの多相性を低下させる．
   このことから，プログラマは型アノテーションによりJuliaプログラムの多相性を調整していると
   考えることもできる．
 }
@@ -61,7 +60,7 @@ Juliaの実行過程においては，
 メソッド呼び出し時，与えられた引数組型に対するそのメソッドのcode specializationがまだ行われていない場合
 （つまりそのメソッドの，その引数型組に対する最適化されたコードのキャッシュがまだ存在しない場合），
 呼び出しの最適化を目的として型推論が行われ，型推論の結果に基づいて最適化が行われる
-（Juliaの実行プロセス~\ref{subsubsection:eval-process}参照）．
+（\hyperref[subsubsection:eval-process]{Juliaの実行プロセス}参照）．
 
 Juliaのプログラムの式や変数の型は，プログラムを型レベルで抽象解釈することで推論される．
 Juliaの型推論に用いられている解析手法は元々，
@@ -130,14 +129,18 @@ Juliaの型システムは\verb|Union|型や\verb|Tuple|型，そしてコンテ
 
 \subsubsection{correctness} \label{subsubsection:inference-correctness}
 
+\cite{graph-free-data-flow-analysis}のアルゴリズムを用いたdata-flow analysisには，
+推論された型について次の性質が成り立つ\cite{jeff-master}．
+
 \begin{quote}
   Dynamic type inference schemes obey a correctness property that inferred types
   must subsume all possible run-time types.
 \end{quote}
 
-% NOTE: informalな証明であることに触れておく:
 
 \subsection{TypeProfiler.jlの設計と性質}
+
+この節では本論文で提案する型プロファイラの実装であるTypeProfiler.jlの設計と，その性質に関する説明を行う．
 
 \subsubsection{設計}
 
@@ -151,6 +154,8 @@ Juliaの型システムは\verb|Union|型や\verb|Tuple|型，そしてコンテ
 %   * Ruby: 型はクラスになる <- コンテナ型はどうなる？
 %   * Julia: 様々な型がある
 % - 型システムの設計になる
+
+実装は\url{https://github.com/aviatesk/TypeProfiler.jl}で公開している．
 
 \subsubsection{性質}
 

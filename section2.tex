@@ -71,11 +71,7 @@ generic functionが呼ばれた時，そのメソッドの中から（全ての�
 Julia v1.5においては\verb|sum|関数には標準ライブラリを含めて計14個のメソッドが与えられている．
 そのうちの3つを抜粋する（読みやすさのためやや改変している）．
 
-\begin{listing}[ht]
-  \inputminted[frame=lines, linenos]{julia}{src/sums_method.jl}
-  \caption{definition of \texttt{sum}}
-  \label{lst:sums}
-\end{listing}
+\inputminted[frame=lines, linenos]{julia}{src/sums_method.jl}
 
 1行目のメソッドが最もgenericな場合を扱う実装であり，
 2行目のメソッドがgenericな配列型に対する実装，
@@ -221,7 +217,7 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 
 \footnotetext{
   こうしたパースタイムにおけるマクロ展開
-  （小節\ref{subsubsection:eval-process}参照）
+  （\hyperref[subsubsection:eval-process]{Juliaの実行プロセス}参照）
   によるシンタックスレベルのメタプログラミングの他，
   関数のコンパイル時に引数の型情報を用いて新たにコードを生成しそれを実行するstaged programmingも可能である．
   Juliaのstaged programmingは上述したgeneric functionのdispatchのメカニズムを用いた非常に自然な言語機能として提供されている．
@@ -243,7 +239,8 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 からである．
 
 % REVIEW: ここでよい？
-\subsubsection{Juliaの実行プロセスと中間表現} \label{subsubsection:eval-process}
+\subsubsection*{Juliaの実行プロセスと中間表現} \label{subsubsection:eval-process}
+\addcontentsline{toc}{subsubsection}{\nameref{subsubsection:eval-process}}
 
 最後に，以降の説明を容易にするため，Juliaプログラムが実行されるプロセスを大まかにまとめ，
 各実行段階におけるプログラムの中間表現を指す用語を導入する\cite{eval-of-julia-code, julia-asts}．\\
@@ -460,7 +457,7 @@ RubyやJavaScriptでの取り組み~\cite{ruby-type-profiler, type-analysis-for-
 そのままでは存在しうる型が有限にならず，抽象解釈のアルゴリズムの停止性を保証できない．
 
 これらの問題は，何らかのヒューリスティックを用いて，
-状態や抽象値の数を制限することで対処することが多いが，
+抽象解釈中の状態や抽象値の数を制限することで対処することが多いが，
 状態がより抽象化される分だけ解析の正確性は失われてしまうため，
 解析の正確性とスケーラビリティはトレードオフの関係をなしている．
 実用的に必要な解析の正確性を保ちつつ，同時に実用に耐え得るスケーラビリティも保てるように
@@ -478,7 +475,7 @@ Juliaプログラム中に含まれる，シンタックスレベルでの解析
 程度のパフォーマンスを備えている．
 
 ここで，シンタックスレベルの解析とは，surface AST
-（小々節\ref{subsubsection:eval-process}参照）
+（\hyperref[subsubsection:eval-process]{Juliaの実行プロセスと中間表現}参照）
 の段階のプログラム表現から得られる情報を用いた解析を意味し，
 つまりStaticLint.jlは実行プロセス3以降のプロセスに相当する解析は行わない．
 
