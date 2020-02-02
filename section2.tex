@@ -9,8 +9,8 @@
 
 \subsection{Julia言語の特徴と静的解析} \label{subsection:2-1}
 
-% REVIEW: オブジェクト指向言語であることに触れる必要ある？曖昧では
-数あるJuliaの特徴の中でも，以下の2点はJuliaプログラムの静的な型解析を考える上で重要である．
+Juliaは\textbf{generic function（総称関数）ベースのオブジェクト指向言語}である\footnotemark．
+数あるJuliaの特徴の中でも，特に以下の2点はJuliaプログラムに対する静的な型解析を考える上で重要である．
 
 \begin{enumerate}
   \item generic functionを通じた多相性と最適化
@@ -23,6 +23,18 @@ Juliaプログラムを型レベルで静的解析する必要性と，
 コード例と共に紹介する．
 \ref{section:4}節において，それらのコード例は
 型プロファイラを用いて解析される．
+
+\footnotetext{
+  通常のオブジェクト指向言語だと，
+  メッセージを受け取るメインのオブジェクトがあり，それによってメッセージの処理方法が定まる．
+  一方Juliaの場合は，
+  引数全部のオブジェクトの型によって，
+  generic functionのどの実装（メソッド）が実行されるかが決まる点（\ref{subsubsection:generic-function}参照）
+  が異なる．
+  またJuliaのオブジェクト指向は，
+  JavaやRubyなどの言語にみられるようなクラスベースのオブジェクト指向ではないことにも
+  注意されたい．
+}
 
 \subsubsection{generic function} \label{subsubsection:generic-function}
 
