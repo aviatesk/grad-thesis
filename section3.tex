@@ -333,14 +333,28 @@ wideningが行われる型の長さや深さの閾値も，ヒューリスティ
 
 \subsubsection{correctness} \label{subsubsection:inference-correctness}
 
-\cite{graph-free-data-flow-analysis}のアルゴリズムを用いたdata-flow analysisには，
-推論された型について次の性質が成り立つ\cite{jeff-master}．
+\cite{graph-free-data-flow-analysis}のアルゴリズムを用いたdata-flow analysisに対しては，
+次の性質が成り立つ\cite{jeff-master}．
 
-\begin{quote}
-  Dynamic type inference schemes obey a correctness property that inferred types
-  must subsume all possible run-time types.
-\end{quote}
+% TODO: lattice的な用語を使った方が分かりやすいかも
 
+\begin{theorem*}[correctness]
+  \label{theorem:inference-correctness}
+  % > Dynamic type inference schemes obey a correctness property that inferred types must subsume all possible run-time types.
+  プログラム中のある式\(Expr\)に対して推論された型\(T_{infer}\)は，
+  \(Expr\)が実行時において取りうるあらゆる型\(T_{runtime}\)を全て含んでいる．
+  \[
+    T_{runtime} \leq T_{infer} \Leftrightarrow \llbracket T_{runtime} \rrbracket \subseteq \llbracket T_{infer} \rrbracket
+  \]
+\end{theorem*}
+
+この性質から，
+ある式がconcreteな型\(T\)を取ると推論された場合，その式の型は実行時においても必ず\(T\)となり\footnote{
+  % TODO: more valid way to say this
+  Juliaの型システムにおいてconcrete typeは（\texttt{Bottom}型以外には）subtypeを持たない．
+  つまり，concrete typeが含む型はそれ自身のみである．
+}，
+コンパイラは実行時の型アサーションなしに\(T\)型に対して最適化されたルーチンを呼ぶコードを生成することができる．
 
 \subsection{TypeProfiler.jlの設計と性質} \label{subsection:type-profiler-design-and-property}
 
