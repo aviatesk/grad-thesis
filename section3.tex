@@ -1,6 +1,6 @@
 % !TeX root = ./main.tex
 
-\section{型プロファイラの設計方針} \label{section:3}
+\section{型プロファイラの設計} \label{section:3}
 
 この節では，
 まず本論文の取り組みとして型プロファイリングによる解析手法を採用する理由を
@@ -80,9 +80,10 @@ data-flow analysisは以下のような性質を持つ．
 
 \begin{enumerate}
   \item 推論が柔軟である．
-        例えば，変数はプログラムの各時点において異なる型を持つことができ，
+        例えば，
+        変数は（明示的なキャストをせずとも）プログラムの各時点において異なる型を持つことができ，
         また推論により型は必ずしも決定されなくてもよいなど，
-        より動的型付けに適した性質を備えている．
+        より動的型付けに即した性質を備えている．
   \item 型システムが表現可能な型の数が有限でない場合においても，
         wideningと呼ばれる手法を用いることでアルゴリズムの停止性を保つことができる．
         また，ヒューリスティックを用いて推論中の型をナイーブな実装よりも早くより抽象的な型へ遷移させることで，
@@ -103,8 +104,129 @@ data-flow analysisは以下のような性質を持つ．
 
 \subsubsection{アルゴリズム}
 
+\hyperref[subsubsection:eval-process]{Juliaの実行プロセス}で述べたように，
+型推論はgeneric functionがある引数型組を伴って初めて呼ばれたときに引き起こされ，
+Juliaプログラムを
+\textbf{SSA形式（Static Single Assignment Form）}\cite{julia-ssa}
+に変換したlowered formに対して行われる．
+このSSA形式はsurface ASTとは異なり，木構造のデータ構造ではなく，
+関数呼び出しや条件分岐など「ある1つのことを行う」\textbf{statement}の連なりである．
+SSA形式においては，各変数は使用される前に必ず定義され，また一度しか代入されない\footnote{
+  ここで，SSA形式中の「変数」は元のプログラム中の変数と一対一に対応しない．
+  元のプログラム中における変数の再代入は，SSA形式においては新たな変数への代入として変換される．
+}上，control flowはネストせず，分岐先と対応する
+\href{https://en.wikipedia.org/wiki/Basic_block}{"basic block"}
+へのgotoとして表現される．
+こうした性質からSSA形式は，
+定数伝播（constant propagation）やデッドコード削除（dead code elimination）等
+といった最適化を行うための分析に適している．
+以下，単に"statement"という場合，このSSA形式のstatementを意味する．
+
 Juliaの型推論は，\cite{graph-free-data-flow-analysis}で提案されたgraph freeな最大不動点計算の
 フレームワークを相互再帰関数も扱えるように拡張したアルゴリズムにより実装されている．
+基本となるアイディアは，
+それぞれのstatementの副作用を決定し，
+その型情報を，そのstatementからcontrol flowにより到達可能な全てのstatementに伝播させ，
+プログラムの各時点おける状態をトレースするというものである．
+
+以下にその基本的なアルゴリズムを説明する\cite{jameson, julia-2012}．
+
+Juliaの型推論は，
+1つの関数呼び出し内におけるプロセス（local type inference）と，
+複数の関数呼び出しにまたがって行われるプロセス（interprocedural type inference）
+の2つに分けて説明することができる
+\footnote{
+  正確には，この2つとは別に，comprehension（内包表記）に対する推論のサブルーチンが
+  ある種のspecial caseとして存在する\cite{jameson}．
+}．
+
+\paragraph{local type inference}
+
+$W$を次に推論されるべきstatementの集合とする． % REVIEW: 元の説明通りprogram counterとするべき？
+
+まず，推論が始まる前に，推論されるメソッド内の状態を以下のように初期化する．
+
+\begin{itemize}
+  \item メソッドのエントリポイントとなるstatementを$W$に追加する
+  \item メソッドの引数それぞれの型は推論されている型をそのままセットする
+  \item 全てのローカル変数を\textbf{\texttt{Bottom}}型\footnotemark にセットする
+  \item メソッドの返り値型を\verb|Bottom|型\footnotemark[\value{footnote}] にセットする
+\end{itemize}
+
+% TODO: Bottom型に関する説明
+\footnotetext{
+  \texttt{Bottom}型に関する説明．
+}
+
+その後，推論は以下のプロセスを$W$が空になるまで繰り返す．
+
+\begin{enumerate}
+  \item $W$に残っているstatementを1つ取り出す（以下"currrent statement"と呼ぶ）
+  \item current statementの副作用を決定する．
+        例えば代入は変数の型を変化させる．
+        もしcurrent statementが関数呼び出しである場合，
+        その関数の返り値型を推論する（このサブルーチンについては後述する）．
+        推論を再帰的に行うことにより，すべてのstatementの型を導出することができる
+  \item current statementから到達可能な\textbf{全ての}statement
+        （以下そのそれぞれを"next statement"と呼ぶ）
+        を$W$に追加し，そのそれぞれに対しcurrent statementの型情報を伝播させる．
+        このプロセスは2つのstatementの変数の型を\textbf{type merge}させることで行われる．
+        無限ループを避けるため，
+        current statementとのtype mergeによりnext statementに含まれるいずれかの変数の型が変化する場合にのみ，
+        next statementは$W$に追加される．
+        このtype mergeにおいて，アルゴリズムの収束を保証するため，
+        widening~\ref{subsubsection:inference-termination-and-heuristic}
+        と呼ばれる手法が用いられる．
+\end{enumerate}
+
+current statementが関数呼び出しである場合，以下のサブルーチンにより関数呼び出しの返り値型が推論される．
+
+\begin{itemize}
+  \item generic functionの呼び出しである場合，まず呼び出しの引数組型とマッチするメソッドを求める\footnotemark．
+        マッチするメソッドは，
+        呼び出し引数組型とメソッドシグネチャの型のtype intersection
+        （greatest lower bound，または交差型）が\texttt{Bottom}型とはならないものとして求まる．
+        マッチしたメソッドのそれぞれに対して以上と同様の型推論を行い，
+        全ての推論結果をmergeすることで，そのgeneric functionの呼び出しの返り値型を求める．
+  \item 呼び出される関数がgeneric functionでない場合，それはbuilt-in functionの呼び出し
+        である．
+        built-in functionの数は限られており，その返り値型はhard codeされた型遷移関数により計算される．
+\end{itemize}
+
+$T$をこのサブルーチンの型遷移関数とし，
+$f$をgeneric function，
+$t_{arg}$を推論された引数組型，$s$と$g$をそれぞれ$f$のメソッドの引数のシグネチャと実装とすると，
+generic functionの呼び出しに対するサブルーチンは以下のように表される．
+
+\[
+  T(f,t_{arg}) = \bigsqcup_{(s,g) \in f}T(g,t_{arg} \sqcap s)
+\]
+
+ここで，$\sqcup$，$\sqcap$はそれぞれtype intersectionとtype mergeに対応する演算である．
+
+\footnotetext{
+  この時，引数それぞれの型は必ずしもconcrete typeではないことに注意
+  （Juliaの型推論においては，wideningにより全ての型がconcrete typeとはならない）．
+  そのため，マッチするメソッドは複数ある可能性がある．
+}
+
+\paragraph{interprocedural type inference}
+
+さらに，再帰関数の呼び出しに対応するため，
+以上のプロセスをgeneric functionの呼び出しにまたがってinterproceduralに管理する，
+次のような手続きを考える必要がある．
+
+推論の過程において，呼び出しが生じたgeneric functionとその引数型組の組み合わせを保持しておく．
+同一の呼び出しが生じた場合，
+それらの呼び出し間で生じる全ての関数呼び出しを相互再帰関数呼び出しとして記録し，
+それらの返り値型がまだ完全に推論されていないことを示す\textit{incomplete}タグを付与する．
+\textit{incomplete}タグが付与されている全ての関数の返り値型がfix-point（不動点）に至るまで，
+この相互再帰関数呼び出しのサイクルに対して推論のプロセスを繰り返す\footnote{
+  このinterprocedural type inferenceの実装は，
+  特に相互再帰呼び出しのサイクルが複数存在する場合などにおいて，型推論のパフォーマンスを大きく変える．
+  Juliaの型推論アルゴリズムにおいてそれが実際どのように実装され，いかに技術的な課題点が克服されているかについては
+  \cite{jameson, jameson-revisited}が詳しいが，ここでは詳細な説明は避ける．
+}．
 
 \subsubsection{停止性とヒューリスティック} \label{subsubsection:inference-termination-and-heuristic}
 

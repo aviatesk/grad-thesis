@@ -279,9 +279,8 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
   \item surface ASTに含まれるマクロを全て展開（\textbf{マクロ展開}）し，
         さらに\textbf{lowering}\footnote{
           ここで"lowering"とは，型推論などの解析がしやすいように，
-          マクロ展開後のsurface ASTを
-          \href{https://docs.julialang.org/en/latest/devdocs/ssair/}{SSA形式}
-          を取るlowered form（または単にIR，Intermediate Representationと呼ぶ）
+          マクロ展開後のsurface ASTをSSA形式\cite{julia-ssa}を取る
+          lowered form（または単にIR，Intermediate Representationと呼ぶ）
           にさらに変換することを指す．
         }を行い\textbf{lowered form}を得る．
   \item 簡単なヒューリスティック\footnote{
