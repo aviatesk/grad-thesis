@@ -5,7 +5,7 @@
 この節では，
 まず本論文の取り組みとして型プロファイリングによる解析手法を採用する理由を
 前節の先行研究（\ref{subsection:prev-reseaches}）を踏まえて説明する．
-次に，Juliaの型推論システムについて，そのアルゴリズムや停止性などに関する基本的な性質を説明する．
+次に，Juliaの型推論システムについて，そのアルゴリズムや収束性などに関する基本的な性質を説明する．
 というのは，本論文で提案する型プロファイラの設計方針や性質は，
 結局その抽象解釈のメインルーチンとなるJuliaの型推論システムにより決まるからである．
 そして最後に型プロファイラの実装であるTypeProfiler.jlの設計とその性質を説明する．
@@ -85,7 +85,7 @@ data-flow analysisは以下のような性質を持つ．
         また推論により型は必ずしも決定されなくてもよいなど，
         より動的型付けに即した性質を備えている．
   \item 型システムが表現可能な型の数が有限でない場合においても，
-        wideningと呼ばれる手法を用いることでアルゴリズムの停止性を保つことができる．
+        wideningと呼ばれる手法を用いることでアルゴリズムの収束性を保つことができる．
         また，ヒューリスティックを用いて推論中の型をナイーブな実装よりも早くより抽象的な型へ遷移させることで，
         推論の収束を早めることができる．
   \item 型推論の実装と言語仕様とを切り離すことが可能である．
@@ -99,10 +99,10 @@ data-flow analysisは以下のような性質を持つ．
 \end{enumerate}
 
 以下では，まずこのJuliaの型推論システムの基本的なアルゴリズムを説明する．
-その次にヒューリスティックを導入することによりこのアルゴリズムの停止性が与えられることを説明し，
+その次にヒューリスティックを導入することによりこのアルゴリズムの収束性が与えられることを説明し，
 最後にJuliaの型推論ルーチンの推論結果のcorrectnessについて言及する．
 
-\subsubsection{アルゴリズム}
+\subsubsection{アルゴリズム} \label{subsubsection:inference-algorithm}
 
 \hyperref[subsubsection:eval-process]{Juliaの実行プロセス}で述べたように，
 型推論はgeneric functionがある引数型組を伴って初めて呼ばれたときに引き起こされ，
@@ -124,10 +124,11 @@ SSA形式においては，各変数は使用される前に必ず定義され�
 
 Juliaの型推論は，\cite{graph-free-data-flow-analysis}で提案されたgraph freeな最大不動点計算の
 フレームワークを相互再帰関数も扱えるように拡張したアルゴリズムにより実装されている．
-基本となるアイディアは，
+ベースとなるアイディアは，
+プログラムを型レベルで（単方向に）仮想実行する（foward data-flow analysis）というもので，
 それぞれのstatementの副作用を決定し，
 その型情報を，そのstatementからcontrol flowにより到達可能な全てのstatementに伝播させ，
-プログラムの各時点おける状態をトレースするというものである．
+プログラムの各時点おける状態をトレースする．
 
 以下にその基本的なアルゴリズムを説明する\cite{jameson, julia-2012}．
 
@@ -138,30 +139,36 @@ Juliaの型推論は，
 \footnote{
   正確には，この2つとは別に，comprehension（内包表記）に対する推論のサブルーチンが
   ある種のspecial caseとして存在する\cite{jameson}．
+  comprehension式の型は，comprehension式に対する操作を全て考慮した上で推論される必要があり，
+  この手続きは単純な単方向解析（forward data-flow analysis）では可能でないためspecial caseされる．
 }．
 
 \paragraph{local type inference}
 
-$W$を次に推論されるべきstatementの集合とする． % REVIEW: 元の説明通りprogram counterとするべき？
+\(W\)を次に推論されるべきstatementの集合とする． % REVIEW: 元の説明通りprogram counterとするべき？
 
 まず，推論が始まる前に，推論されるメソッド内の状態を以下のように初期化する．
 
 \begin{itemize}
-  \item メソッドのエントリポイントとなるstatementを$W$に追加する
+  \item メソッドのエントリポイントとなるstatementを\(W\)に追加する
   \item メソッドの引数それぞれの型は推論されている型をそのままセットする
-  \item 全てのローカル変数を\textbf{\texttt{Bottom}}型\footnotemark にセットする
-  \item メソッドの返り値型を\verb|Bottom|型\footnotemark[\value{footnote}] にセットする
+  \item 全てのローカル変数の型とメソッドの返り値型を\textbf{\texttt{Bottom}}型\footnotemark にセットする
 \end{itemize}
 
-% TODO: Bottom型に関する説明
 \footnotetext{
-  \texttt{Bottom}型に関する説明．
+  \texttt{Bottom}型は，Juliaのtype latticeの最も底に位置する型であり，
+  Juliaの型システムにおける他すべての型のsubtypeとして機能する．
+  \texttt{Bottom}型と型\(T\)をmergeして得られるunion型は常に\(T\)となるため，
+  型推論において\texttt{Bottom}型は
+  まだ初期化されていない変数の型やまだリターンされていない関数の返り値型として用いられる．
+  また，\texttt{Bottom}は型推論アルゴリズムがエラーの発生を検出した場合にも導入される．
+  Juliaのプログラムにおいては，\texttt{Union\{\}}型がこの\texttt{Bottom}型を表す．
 }
 
-その後，推論は以下のプロセスを$W$が空になるまで繰り返す．
+その後，推論は以下のプロセスを\(W\)が空になるまで繰り返す．
 
 \begin{enumerate}
-  \item $W$に残っているstatementを1つ取り出す（以下"currrent statement"と呼ぶ）
+  \item \(W\)に残っているstatementを1つ取り出す（以下"currrent statement"と呼ぶ）
   \item current statementの副作用を決定する．
         例えば代入は変数の型を変化させる．
         もしcurrent statementが関数呼び出しである場合，
@@ -169,23 +176,25 @@ $W$を次に推論されるべきstatementの集合とする． % REVIEW: 元の
         推論を再帰的に行うことにより，すべてのstatementの型を導出することができる
   \item current statementから到達可能な\textbf{全ての}statement
         （以下そのそれぞれを"next statement"と呼ぶ）
-        を$W$に追加し，そのそれぞれに対しcurrent statementの型情報を伝播させる．
-        このプロセスは2つのstatementの変数の型を\textbf{type merge}させることで行われる．
+        を\(W\)に追加し，そのそれぞれに対しcurrent statementの型情報を伝播させる．
+        このプロセスは2つのstatementの変数の型を\textbf{merge}させ，
+        それらのunion型を求めることで行われる．
         無限ループを避けるため，
         current statementとのtype mergeによりnext statementに含まれるいずれかの変数の型が変化する場合にのみ，
-        next statementは$W$に追加される．
+        next statementは\(W\)に追加される．
         このtype mergeにおいて，アルゴリズムの収束を保証するため，
-        widening~\ref{subsubsection:inference-termination-and-heuristic}
+        widening（\ref{subsubsection:inference-convergence-and-heuristic}）
         と呼ばれる手法が用いられる．
 \end{enumerate}
 
 current statementが関数呼び出しである場合，以下のサブルーチンにより関数呼び出しの返り値型が推論される．
 
 \begin{itemize}
-  \item generic functionの呼び出しである場合，まず呼び出しの引数組型とマッチするメソッドを求める\footnotemark．
+  \item generic functionの呼び出しである場合，まず呼び出しの引数組型とマッチするメソッドを求める．
         マッチするメソッドは，
-        呼び出し引数組型とメソッドシグネチャの型のtype intersection
-        （greatest lower bound，または交差型）が\texttt{Bottom}型とはならないものとして求まる．
+        呼び出し引数組型とメソッドのシグネチャ型を\textbf{meet}させ得られる
+        それらのintersection型（greatest lower bound，または交差型）\footnotemark
+        が\texttt{Bottom}型とはならないものとして求まる．
         マッチしたメソッドのそれぞれに対して以上と同様の型推論を行い，
         全ての推論結果をmergeすることで，そのgeneric functionの呼び出しの返り値型を求める．
   \item 呼び出される関数がgeneric functionでない場合，それはbuilt-in functionの呼び出し
@@ -193,21 +202,25 @@ current statementが関数呼び出しである場合，以下のサブルーチ
         built-in functionの数は限られており，その返り値型はhard codeされた型遷移関数により計算される．
 \end{itemize}
 
-$T$をこのサブルーチンの型遷移関数とし，
-$f$をgeneric function，
-$t_{arg}$を推論された引数組型，$s$と$g$をそれぞれ$f$のメソッドの引数のシグネチャと実装とすると，
+\(T\)をこのサブルーチンの型遷移関数とし，
+\(f\)をgeneric function，
+\(t_{arg}\)を推論された引数組型，\(s\)と\(g\)をそれぞれ\(f\)のメソッドの引数のシグネチャと実装とすると，
 generic functionの呼び出しに対するサブルーチンは以下のように表される．
 
 \[
   T(f,t_{arg}) = \bigsqcup_{(s,g) \in f}T(g,t_{arg} \sqcap s)
 \]
 
-ここで，$\sqcup$，$\sqcap$はそれぞれtype intersectionとtype mergeに対応する演算である．
+ここで，\(\sqcup\)，\(\sqcap\)はそれぞれtype mergeとtype meetに対応する演算である．
 
 \footnotetext{
-  この時，引数それぞれの型は必ずしもconcrete typeではないことに注意
-  （Juliaの型推論においては，wideningにより全ての型がconcrete typeとはならない）．
-  そのため，マッチするメソッドは複数ある可能性がある．
+  このintersection型を求めるmeetを厳密に実装することは難しい\cite{jeff-phd}．
+  Juliaは現在のところ，intersectionが過大に評価される
+  （真のintersectionよりも広い範囲の型を返す）ことを許す形でmeetを実装しているが，
+  それでも型推論の収束性とcorrectnessは保たれる．
+  つまり，type meetは型推論においてメソッドのマッチングにのみ用いられているため，
+  intersectionが過大に評価されたとしても，マッチするメソッドの数が増え推論の結果が粗くなるだけで，
+  推論の単調性と有限性（\ref{subsubsection:inference-convergence-and-heuristic}は失われない．
 }
 
 \paragraph{interprocedural type inference}
@@ -220,24 +233,25 @@ generic functionの呼び出しに対するサブルーチンは以下のよう�
 同一の呼び出しが生じた場合，
 それらの呼び出し間で生じる全ての関数呼び出しを相互再帰関数呼び出しとして記録し，
 それらの返り値型がまだ完全に推論されていないことを示す\textit{incomplete}タグを付与する．
-\textit{incomplete}タグが付与されている全ての関数の返り値型がfix-point（不動点）に至るまで，
+\textit{incomplete}タグが付与されている全ての関数の返り値型がfix-pointに至るまで，
 この相互再帰関数呼び出しのサイクルに対して推論のプロセスを繰り返す\footnote{
   このinterprocedural type inferenceの実装は，
   特に相互再帰呼び出しのサイクルが複数存在する場合などにおいて，型推論のパフォーマンスを大きく変える．
-  Juliaの型推論アルゴリズムにおいてそれが実際どのように実装され，いかに技術的な課題点が克服されているかについては
+  Juliaの型推論アルゴリズムにおいてそれが実際どのように実装され，技術的な課題点がいかに克服されているかについては
   \cite{jameson, jameson-revisited}が詳しいが，ここでは詳細な説明は避ける．
 }．
 
-\subsubsection{停止性とヒューリスティック} \label{subsubsection:inference-termination-and-heuristic}
+\subsubsection{収束性とヒューリスティック} \label{subsubsection:inference-convergence-and-heuristic}
 
 上記のアルゴリズムを使用したdata-flow analysisは以下の性質を満たす場合に，
-必ず収束し停止することが保証される\cite{graph-free-data-flow-analysis, jameson}．
+必ず収束することが保証される\cite{graph-free-data-flow-analysis, jameson}．
 
 \begin{description}
-  \item [単調性] 2つの型をmergeしたときに必ずより抽象的な型にならなければならない．
-                また，data-flow analysisにおける関数呼び出しは単調でなければならない．
-                つまり引数型が抽象的であるほど，推論される返り値型も抽象的でなければならない．
-  \item [有限性] 型システムにおいて表現され得る型が有限である．
+  \item [単調性（monotonicity）]
+        2つの型をmergeしたときに必ずより抽象的な型にならなければならない．
+        また，data-flow analysisにおける関数呼び出しは単調でなければならない．
+        つまり呼び出しの引数型が抽象的であるほど，推論される返り値型も抽象的にならなければならない．
+  \item [有限性（finiteness）] 型システムにおいて表現され得る型が有限である．
 \end{description}
 
 有限性に関して，

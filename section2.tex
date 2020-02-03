@@ -185,7 +185,7 @@ dispatchされ得るメソッドが存在しないことに起因するエラー
 \verb|sum|がgenericな配列型に対して動作すると期待するプログラマがこうしたエラーを事前に予測することは簡単ではない．
 
 \footnotetext{
-  Juliaは現在のところ逆方向の型推論（"backwards type flow"）を行うことができない\cite{julia-2012}．
+  Juliaは現在のところ逆方向の型推論（"backwards type flow"）を行うことができない\cite{julia-2012}\ref{subsubsection:inference-algorithm}．
   コンテナ型の変数のパラメータ型を変数宣言以降のコードの操作から
   推論することはできず，この場合\texttt{ints}には
   \texttt{[]}の型\texttt{Array\{Any,1\}}がそのまま与えられる．
