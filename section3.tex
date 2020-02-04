@@ -387,7 +387,7 @@ paragraph~\ref{paragraph:type-profiler-heuristic}で説明する．
 設計について説明する．
 実際の実装は\url{https://github.com/aviatesk/TypeProfiler.jl}で公開している．
 
-\paragraph{TypeProfiler.jlが報告するエラー}
+\paragraph{TypeProfiler.jlが報告するエラー} \label{paragraph:type-profiler-error-statement}
 
 TypeProfiler.jlは以下のエラーを報告する．
 
@@ -408,7 +408,7 @@ TypeProfiler.jlは以下のエラーを報告する．
         推論されている引数組型が型エラーが生じうるものである場合に報告
 \end{description}
 
-\paragraph{基本的な実装方法} \label{paragraph:type-profiler-basic-implementation}
+\paragraph{基本的な実装} \label{paragraph:type-profiler-basic-implementation}
 
 TypeProfiler.jlは以下のように実装されている．
 
@@ -420,7 +420,7 @@ TypeProfiler.jlは以下のように実装されている．
   \item プログラム辺をパースしsurface ASTを得る．
         さらにsurface ASTに含まれるマクロを全て展開し，lowered formを得る．
   % TODO: もっと正確に記述する
-  \item モジュールの使用や，型・generic functionの定義などの
+  \item モジュールの使用や，型・generic function・マクロの定義などの
         "toplevel action"については通常のJuliaの実行プロセスに従って実行する．
         以降のプロセスはそれ以外の場合とする．
   \item lowered formの各statementを走査しエラーが発生しうる箇所を記録する．
@@ -468,7 +468,7 @@ TypeProfiler.jlは特殊な型\verb|Unknown|を導入し，
   この\texttt{Unknown}型は，Juliaの型推論ルーチンにおける\texttt{Bottom}型に相当する．
 }．
 
-以上のプロセスを入力のプログラム中の全てのプログラム片に対して順に行った後，
+入力のプログラム中の全てのプログラム片に対して以上のプロセスを順に行った後，
 最後に記録された全てエラーを仮想的なコールスタックとともに報告する．
 
 \paragraph{型検査関数} \label{paragraph:type-check-function}
@@ -551,6 +551,14 @@ TypeProfiler.jlの性質として，
   型プロファイリングのプロセスが到達したあるstatementに対して
   型エラーが報告されない場合，そのstatementは型安全である．
 \end{corollary*}
+
+% REVIEW: 他のセクションで説明してしまう
+\paragraph{マクロを含むコードに対する解析}
+
+TypeProfiler.jlはマクロ展開後のプログラム表現に対して解析を行うため，
+マクロを含むプログラムも問題なくプロファイリングすることができる\footnote{
+  マクロ展開そのものに対する解析は今後の課題である（subsection~\ref{subsection:issues}参照）．
+}．
 
 \paragraph*{type stability}
 
