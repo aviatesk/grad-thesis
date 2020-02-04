@@ -2,7 +2,7 @@
 
 \section{静的な型エラー検出を考える上でのJulia言語の考察と先行研究} \label{section:2}
 
-この節ではまずJuliaの重要な性質を概観し，その静的解析に求められる要件を確認する．
+このsectionではまずJuliaの重要な性質を概観し，その静的解析に求められる要件を確認する．
 その後，他の動的言語における静的解析によるデータ型エラー検出の取り組みと，
 現行のエコシステムにおけるJuliaプログラムに対する静的解析の取り組みを紹介し，
 本論文において取りうるアプローチを検討する．
@@ -18,11 +18,10 @@ Juliaは\textbf{generic function（総称関数）ベースのオブジェクト
   \item 強力なメタプログラミング機能（マクロの頻繁な使用）
 \end{enumerate}
 
-この小節ではgeneric functionとメタプログラミングという2点からJuliaの性質を概観し，
+このsubsectionではgeneric functionとメタプログラミングという2点からJuliaの性質を概観し，
 Juliaプログラムを型レベルで静的解析する必要性と，
-その際にどのような困難を生じ得るかを
-コード例と共に紹介する．
-\ref{section:4}節において，それらのコード例は
+その際にどのような困難を生じ得るかをコード例と共に紹介する．
+subsection~\ref{subsection:experiments-and-comparison}において，それらのコード例は
 型プロファイラを用いて解析される．
 
 \footnotetext{
@@ -265,7 +264,7 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 マクロを含むプログラムの正確な意味を得るためには，
 マクロ展開を行った後のプログラムに対する解析を行う必要があるが，
 マクロ展開にかかるプロセスは静的解析の実装における1つの障壁になりうる
-（小々節\ref{paragraph:analyse-code-including-macro}参照）
+（paragraph~\ref{paragraph:analyse-code-including-macro}参照）
 からである．
 
 % REVIEW: ここでよい？
@@ -449,7 +448,7 @@ RubyやJavaScriptでの取り組み~\cite{ruby-type-profiler, type-analysis-for-
 
 一方で抽象解釈に伴う困難は様々に存在する．
 ここではruby-type-profiler~\cite{ruby-progress-report, ruby-type-profiler}で報告されているものを中心に紹介する．
-これらの問題点は\ref{section:3}節のTypeProfiler.jlの設計においても重要となる．
+これらの問題点はsection~\ref{section:3}のTypeProfiler.jlの設計においても重要となる．
 
 % IDEA: 入力となるプログラムが実行可能でなければならないことにも触れる？
 \paragraph{トップレベルスクリプトの必要性}

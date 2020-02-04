@@ -2,9 +2,9 @@
 
 \section{型プロファイラの設計} \label{section:3}
 
-この節では，
+このsectionでは，
 まず本論文の取り組みとして型プロファイリングによる解析手法を採用する理由を
-前節の先行研究（\ref{subsection:prev-reseaches}）を踏まえて説明する．
+subsection~\ref{subsection:prev-reseaches}の先行研究を踏まえて説明する．
 次に，Juliaの型推論システムについて，そのアルゴリズムや収束性などに関する基本的な性質を説明する．
 というのは，本論文で提案する型プロファイラの設計方針や性質は，
 結局その抽象解釈のメインルーチンとなるJuliaの型推論システムにより決まるからである．
@@ -246,6 +246,11 @@ generic functionの呼び出しに対するサブルーチンは以下の式で�
 
 \subsubsection{収束性とヒューリスティック} \label{subsubsection:inference-convergence-and-heuristic}
 
+このsubsubsectionでは，Juliaの型推論アルゴリズムの収束性がいかに保たれているか，
+そしてその収束を早める各種のヒューリスティックについて説明する．
+
+\paragraph{収束性} \label{paragraph:inference-convergence}
+
 上記のアルゴリズムを使用したdata-flow analysisは以下の性質を満たす場合に，
 必ず収束することが保証される\cite{graph-free-data-flow-analysis, jameson}．
 
@@ -335,13 +340,17 @@ wideningはそれぞれの型に応じて以下のように行われる．
 
 以上に説明したwideningによりJuliaの型推論の収束性が保証され，結果的にJITの停止性をもたらす．
 
-\vspace{2ex}
+\paragraph{ヒューリスティック} \label{paragraph:inference-heuristic}
 
 また，Juliaの型推論においては，様々なヒューリスティックを用いることで，
 推論中の型をより早く抽象的な型に遷移させ，型推論の収束を早めている．
 wideningが行われる長さや深さの閾値も，ヒューリスティックにより決まると言える．
 
-それらのヒューリスティックの具体的な内容については，TypeProfiler.jlの設計（\ref{subsubsection:type-profiler-design}）で説明する．
+それらのヒューリスティックの具体的な内容について，
+ここではTypeProfiler.jlの設計（\ref{subsubsection:type-profiler-design}）
+においても重要となるものについて説明する．
+
+% TODO: ヒューリスティックを調べる．
 
 \subsubsection{correctness} \label{subsubsection:inference-correctness}
 
@@ -370,7 +379,7 @@ wideningが行われる長さや深さの閾値も，ヒューリスティック
 
 \subsection{TypeProfiler.jlの設計と性質} \label{subsection:type-profiler-design-and-property}
 
-この節では本論文で提案する型プロファイラの実装であるTypeProfiler.jlの設計と，その性質に関する説明を行う．
+このsubsectionでは本論文で提案する型プロファイラの実装であるTypeProfiler.jlの設計と，その性質に関する説明を行う．
 
 \subsubsection{設計} \label{subsubsection:type-profiler-design}
 

@@ -2,9 +2,9 @@
 
 \section{評価と今後の課題} \label{section:4}
 
-この節ではTypeProfiler.jlの性能を評価し，また現状で把握している課題点についても報告する．
+このsectionではTypeProfiler.jlの性能を評価し，また現状で把握している課題点についても報告する．
 
-\subsection{実験と比較}
+\subsection{実験と比較} \label{subsection:experiments-and-comparison}
 
 % TODO: PPLまでには絶対やる
 現時点ではTypeProfiler.jlの性能の正確な評価までは行うことができていない．
@@ -16,11 +16,11 @@
 %   \item ruby-type-profilerとの比較
 % \end{itemize}
 
-\subsection{今後の課題}
+\subsection{今後の課題} \label{subsection:issues}
 
-% TODO: もっとimpl進めたらもっと見えてくるはず
+% TODO: もっとimpl & evaluation 進めたらもっと見えてくるはず
 
-\subsubsection{built-in functionのプロファイリング}
+\subsubsection{built-in functionの型遷移関数の再実装}
 
 Juliaの型推論システムは，もともとエラー検出を目的に作られていないため，
 推論がbuilt-in functionの呼び出しに到達したとき，
@@ -29,7 +29,7 @@ Juliaの型推論システムは，もともとエラー検出を目的に作ら
 通常全ての実行時型を含む唯一の型である\verb|Any|を返す．
 
 この挙動はJuliaの型推論がもっぱらパフォーマンスの向上を目的として行われていることを考えれば自然な挙動であるが，
-一方でTypeProfilerはエラーの検出を目的としているため，より保守的にエラーの可能性を報告する方が好ましい．
+一方でTypeProfiler.jlはエラーの検出を目的としているため，より保守的にエラーの可能性を報告する方が好ましい．
 
 Juliaのbuilt-in functionの数は数少ないとは言え，それらは手作業で実装される必要がある．
 まだプロファイリングが未実装のbuilt-in functionのサポートは必須の課題である．
