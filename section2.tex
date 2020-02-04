@@ -274,11 +274,11 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 最後に，以降の説明を容易にするため，Juliaプログラムが実行されるプロセスを大まかにまとめ，
 各実行段階におけるプログラムの中間表現を指す用語を導入する\cite{eval-of-julia-code, julia-asts}．\\
 
-以下の操作は全て，実行されるプログラムにおけるそれぞれのコード片
-（Juliaプログラムの実行における単位となる各コード部分）に対して行われるものである．
+以下の操作は全て，実行されるプログラムにおけるそれぞれのプログラム片
+（Juliaの実行における単位となる各プログラム部分）に対して行われるものである．
 
 \begin{enumerate}
-  \item コード片をパースし\textbf{surface AST}\footnote{
+  \item プログラム片をパースし\textbf{surface AST}\footnote{
           ASTは"Abstract Syntax Tree"（抽象構文木）の略．
         }を得る．
   \item surface ASTに含まれるマクロを全て展開（\textbf{マクロ展開}）し，
@@ -288,7 +288,8 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
           lowered form（または単にIR，Intermediate Representationと呼ぶ）
           にさらに変換することを指す．
         }を行い\textbf{lowered form}を得る．
-  \item モジュールの使用や型の定義などの"toplevel action"をインタープリタにより実行する．
+  \item モジュールの使用や，型・generic functionの定義などの
+        "toplevel action"をインタープリタにより実行する．
         以下は関数呼び出しなど"toplevel action"ではない場合の実行プロセスとする．
   \item 簡単なヒューリスティック\footnote{
           このヒューリスティックの具体的な内容については，

@@ -346,11 +346,8 @@ wideningはそれぞれの型に応じて以下のように行われる．
 推論中の型をより早く抽象的な型に遷移させ，型推論の収束を早めている．
 wideningが行われる長さや深さの閾値も，ヒューリスティックにより決まると言える．
 
-それらのヒューリスティックの具体的な内容について，
-ここではTypeProfiler.jlの設計（\ref{subsubsection:type-profiler-design}）
-においても重要となるものについて説明する．
-
-% TODO: ヒューリスティックを調べる．
+それらのヒューリスティックのうちのいくつかの具体的な内容については，
+paragraph~\ref{paragraph:type-profiler-heuristic}で説明する．
 
 \subsubsection{correctness} \label{subsubsection:inference-correctness}
 
@@ -377,39 +374,224 @@ wideningが行われる長さや深さの閾値も，ヒューリスティック
 }，
 コンパイラは実行時の型アサーションなしに\(T\)型に対して最適化されたルーチンを呼ぶコードを生成することができる．
 
+
+% TODO: Juliaの型推論ルーチンは場合によっては型ではなく，実際の値を持つことを説明
+% TODO: rewrite this !
 \subsection{TypeProfiler.jlの設計と性質} \label{subsection:type-profiler-design-and-property}
 
 このsubsectionでは本論文で提案する型プロファイラの実装であるTypeProfiler.jlの設計と，その性質に関する説明を行う．
 
 \subsubsection{設計} \label{subsubsection:type-profiler-design}
 
-% Juliaのinferenceとの違い:
-% - もともとはperformance
-% - inferenceがAnyが来たときにAnyを返す: inferenceの方で書く
-% - それに対応する必要がある
+このsubsubsectionでは本論文で提案する型プロファイラの実装であるTypeProfiler.jlの
+設計について説明する．
+実際の実装は\url{https://github.com/aviatesk/TypeProfiler.jl}で公開している．
 
-% ruby-type-profilerとのルーチンの違い:
-% - 言語設計から生じる違いがある？
-%   * Ruby: 型はクラスになる <- コンテナ型はどうなる？
-%   * Julia: 様々な型がある
-% - 型システムの設計になる
+\paragraph{TypeProfiler.jlが報告するエラー}
 
-実装は\url{https://github.com/aviatesk/TypeProfiler.jl}で公開している．
+TypeProfiler.jlは以下のエラーを報告する．
+
+\begin{description}
+  \item [\texttt{UndefVarError}] 未定義の変数を参照した場合に報告する
+  \item [\texttt{NoMethodError}] generic functionの呼び出しにおいて，
+        推論されている引数組型に対してdispatchされうるメソッドが存在しない場合に報告
+  \item [\texttt{MethodAmbiguityError}] generic functionの呼び出しにおいて，
+        推論されている引数達の型が全てconcrete typeであり，かつそれらのdispatchに
+        method ambiguity\footnote{
+          method ambiguityについては，
+          \url{https://docs.julialang.org/en/v1/manual/methods/\#man-ambiguities-1}
+          を参照せよ．
+        }がある場合に報告
+  \item [\texttt{ConditionError}] 条件分岐式の条件として，
+        \verb|Bool|型以外のオブジェクトが推論されたときに報告
+  \item [\texttt{InvalidBuiltinCallError}] builtin functionの呼び出しにおいて，
+        推論されている引数組型が型エラーが生じうるものである場合に報告
+\end{description}
+
+\paragraph{基本的な実装方法} \label{paragraph:type-profiler-basic-implementation}
+
+TypeProfiler.jlは以下のように実装されている．
+
+まず，入力として受け取ったプログラムのそれぞれのプログラム片
+（Juliaの実行における単位となる各コード部分）に対して，
+次のようなトップレベルの操作を行い，プログラムを型レベルで仮想実行する．
+
+\begin{enumerate}
+  \item プログラム辺をパースしsurface ASTを得る．
+        さらにsurface ASTに含まれるマクロを全て展開し，lowered formを得る．
+  % TODO: もっと正確に記述する
+  \item モジュールの使用や，型・generic functionの定義などの
+        "toplevel action"については通常のJuliaの実行プロセスに従って実行する．
+        以降のプロセスはそれ以外の場合とする．
+  \item lowered formの各statementを走査しエラーが発生しうる箇所を記録する．
+  \begin{itemize}
+    \item トップレベルの変数への代入は型レベルで行う．
+    \item 変数参照が含まれている場合，その変数がすでに定義されているか確かめる．
+          そうでない場合，\verb|UndefVarError|を記録する．
+    \item 条件分岐が含まれている場合，その条件式の型が\verb|Bool|ないとき，
+          \verb|ConditionError|を記録する．
+    \item 関数呼び出しが含まれている場合，後述する型プロファイリングを行い，
+          推論された型をその関数呼び出しの返り値型とする．
+  \end{itemize}
+\end{enumerate}
+
+関数呼び出しに対しては，次のような型プロファイリングを行う．
+
+\begin{enumerate}
+  \item 関数呼び出しがbuiltin-functionの呼び出しである場合，
+        TypeProfiler.jlが実装する型検査関数（paragraph~\ref{paragraph:type-check-function}参照）
+        を用いてその呼び出しのプロファイリングを行い，
+        型エラーが生じうる引数型が与えられている場合，
+        \verb|InvalidBuiltinCallError|を記録する．
+        以降の操作はgeneric functionの呼び出しの場合とする．
+  \item まず推論されている引数組型を用いて，マッチするメソッドを求める．
+        マッチするメソッドがない場合，\verb|NoMethodError|を記録する．
+        推論されている引数達の型が全てconcreteでかつ，マッチしたメソッド達に
+        method ambiguityがある場合，\verb|MethodAmbiguityError|を記録する．
+        それ以外の時，マッチしたそれぞれのメソッドに対して以下の操作を行う．
+  \item その時点で得られている引数達の型を用いて，
+        そのメソッドの呼び出しに対しJuliaの型推論ルーチンを走らせ，
+        \kenten{そのメソッド呼び出しの}typed lowered formを得る．
+  \item 3.で得られるtyped lowered formの各statementを走査し，
+        エラーが発生しうる箇所を記録する．
+        この操作はトップレベルのlowered formに対するものとほぼ同様である．
+        statementにgeneric function呼び出しが含まれる場合，
+        この型プロファイリングを再帰的に行うが，
+        そのgeneric functionと推論されている引数組型の組み合わせに対して
+        既にプロファイリングが行われている場合は，
+        プロファイリングを行わない．
+\end{enumerate}
+
+以上のプロセスにおいて，エラーが生じるのが確定している場合，
+TypeProfiler.jlは特殊な型\verb|Unknown|を導入し，
+以降\verb|Unknown|が含まれる式に関してはプロファイリングは行われない\footnote{
+  この\texttt{Unknown}型は，Juliaの型推論ルーチンにおける\texttt{Bottom}型に相当する．
+}．
+
+以上のプロセスを入力のプログラム中の全てのプログラム片に対して順に行った後，
+最後に記録された全てエラーを仮想的なコールスタックとともに報告する．
+
+\paragraph{型検査関数} \label{paragraph:type-check-function}
+
+Juliaの型推論システムはもともとエラー検出を目的に作られていないため，
+Julia本体が実装しているbuiltin functionの型遷移関数は，
+たとえ与えられた引数型組が型エラーを起こし得るものであってもその情報を伝播させない場合がある．
+
+例えば，builtin function \verb|isa(a, t)|は
+第2引数として\verb|Type|型をsupertypeとする型\footnote{
+  具体的には，
+  \texttt{Core.TypeofBottom}型（\texttt{Union\{\}}の型）と
+  \texttt{DataType}型，
+  \texttt{Union}型，
+  そして\texttt{UnionAll}型の4つである．
+}のオブジェクト\verb|t|を受け取り，
+第1引数\verb|a|が\verb|t|のインスタンスであるかどうかのboolean値を返す．
+\verb|t|が\verb|Type|型をsupertypeとする型のオブジェクト\kenten{ではない}場合，エラーとなる．
+その遷移関数\verb|Core.Compiler.isa_tfunc|は，
+例えば第2引数が\verb|Any|であっても正しい返り値型\verb|Bool|を返す
+\footnote{
+  \url{https://github.com/JuliaLang/julia/blob/3720edfc06ee8687b54ee7fbb908c9f03f4fc557/base/compiler/tfuncs.jl\#L502-L536}
+  で動作確認．
+}が，
+当然\verb|Any|のインスタンスには\verb|Type|型をsupertypeとする型以外の型のオブジェクト
+も含まれる（例えば\verb|1|がそうである）．
+
+Juliaの型推論がもっぱらパフォーマンスの向上を目的として行われていることを考えれば，
+わざわざ実際には発生しないかもしれないエラーの情報を伝播させる必要はないため，
+この挙動は自然である．
+一方でTypeProfiler.jlはエラーの検出を目的としているため，
+こうした場合により保守的にエラーの可能性を報告する方が好ましい．
+
+そのため，builtin-functionの呼び出しについては，
+Julia本体に実装されている型遷移関数の返り値型によりエラーの検出とするのではなく，
+builtin-functionの呼び出しにおける型エラーの可能性を判定する関数
+（これを便宜上\textbf{型検査関数}と呼ぶ）を独自に実装する．
+
+\paragraph{ヒューリスティックの調節} \label{paragraph:type-profiler-heuristic}
+
+subsubsection~\ref{subsubsection:inference-convergence-and-heuristic}でも述べたように，
+wideningによる推論型の抽象化は，Juliaの型推論ルーチンの収束性を保証する上で必要不可欠であり，
+TypeProfiler.jlが行う型プロファイリングにおいても欠かすことはできない．
+一方で，wideningを行う\textbf{程度}については，必ずしもJuliaの型推論と型プロファイリングで一致している必要はないため，
+型プロファイリングの実行速度と，型エラー検出の正確性のトレードオフを検証しつつ，
+wideningの程度を調整するヒューリスティックについて再調節することができる．
+
+また，paragraph~\ref{paragraph:inference-heuristic}で言及した
+Juliaの型推論の収束を早める各種のヒューリスティックについても，同様のことが言える．
+
+ここではそれらのヒューリスティックのうち，TypeProfiler.jlの実装において
+Juliaの型推論ルーチンとは異なるアプローチを取っているものについて説明する
+\footnote{
+  これらのヒューリスティックは，\href
+  {https://github.com/JuliaLang/julia/tree/3720edfc06ee8687b54ee7fbb908c9f03f4fc557}
+  % NOTE: update this date when you edit this section
+  {2020年2月5日時点でのJuliaレポジトリのmasterブランチ}
+  で実装されているものである．
+}．
+
+% TODO: add more
+\begin{itemize}
+  \item generic functionの呼び出し時，マッチしたメソッドが5つ以上である場合，
+        それらのメソッドに対する型推論は行わず，直ちにそのgeneric functionの返り値型を
+        \verb|Any|とする．
+\end{itemize}
+
+TypeProfiler.jlはマッチしたメソッドの全てに対して型プロファイリングを行う．
 
 \subsubsection{性質} \label{subsubsection:type-profiler-property}
 
-TypeProfiler.jlの性質として，\ref{theorem:inference-correctness}を解釈しなおすことで，
-次の系を与えることができる．
+\paragraph{型安全性}
 
-\begin{corollary*}[型プロファイラの型安全性]
-  型プロファイラが公理として与えるstatementにおいて，
-  推論された型がそのstatementに対して型エラーを起こさないような型の集合により包含されている場合，
-  そのstatementは型安全である．
+TypeProfiler.jlの性質として，
+\ref{theorem:inference-correctness}を解釈しなおすことで，次の系を与えることができる．
+
+% REVIEW: type safety
+\begin{corollary*}[型プロファイリングによる型安全性]
+  \label{corollary:type-profiler-type-safety}
+  型プロファイリングのプロセスが到達したあるstatementに対して
+  型エラーが報告されない場合，そのstatementは型安全である．
 \end{corollary*}
 
-% 型が決定できる場合がどの程度あるのか
-% - 呼び出すコードが変わると
+\paragraph*{type stability}
 
-% どのエラーが検知できて，できないのか
+型推論によりプログラム中の式の型がconcrete typeに決定されることを，
+\textbf{type-stability}\cite{type-stability}という．
 
-% - precision vs. scalability
+型プロファイリングされるプログラム中の式の型がconcrete typeに推論されやすい場合，
+つまりプログラムがtype-stableであるほど，
+TypeProfiler.jlは上述した型プロファイリングによる型安全性を示しやすい．
+
+逆に，型推論の過程において型が抽象的になればなるほど，
+TypeProfiler.jlは型エラーを報告しやすくなり
+\footnote{
+  型プロファイリングにおいて，推論型は最終的にbuiltin functionの呼び出しに伝播する．
+  型検査関数は型が抽象的であるほど，型エラーを報告しやすい．
+}，
+型安全性を示すのは難しくなる．
+
+ここではTypeProfiler.jlがどの程度型安全性を示すことができるのかに関する参考として，
+Bezansonらが行った実験\cite{julia-2012}を紹介する．
+
+Juliaの（Julia自身で実装されている）コア機能と標準ライブラリのテストコードを走らせたとき，
+プログラム中の式がどの程度concrete typeに推論されたかを調べたところ，
+以下のような結果が得られたという\footnotemark．
+
+\begin{enumerate}
+  \item 推論が行われた式は合計で135375個であった．
+  \item そのうち，84127個（62\%）の式が\texttt{Any}型よりもspecificな型を持つと推論された．
+  \item 2.の式のうち，80874個（96\%）の式がconcrete typeに推論された．
+\end{enumerate}
+
+この結果から，TypeProfiler.jlはプログラム中のおおよそ60\%程度の部分に対してその型安全性を
+示せることが期待できる．
+
+\footnotetext{
+  もっとも，この数値は2012年のJuliaのコードベースに対して行われた実験で得られたものである
+  ことには注意が必要である．
+  また，コードベース中に含まれるdead codeや，
+  特定のコードがその他のコードに比べて使用されやすい
+  （そして使用されやすいコードは一般によく型が付くように書かれる）
+  ことによる影響，
+  そしてコア機能や標準ライブラリのコード自体が一般にユーザコードよりもtype-stableに
+  書かれているというバイアスにも注意を払わなくてはならない．
+}
