@@ -3,7 +3,8 @@
 \section{静的な型エラー検出を考える上でのJulia言語の考察と先行研究} \label{section:2}
 
 この節ではまずJuliaの重要な性質を概観し，その静的解析に求められる要件を確認する．
-その後，他の動的言語における静的解析によるエラーチェックの取り組みを紹介し，
+その後，他の動的言語における静的解析によるデータ型エラー検出の取り組みと，
+現行のエコシステムにおけるJuliaプログラムに対する静的解析の取り組みを紹介し，
 本論文において取りうるアプローチを検討する．
 
 
@@ -42,11 +43,11 @@ Juliaは\textbf{generic function（総称関数）}に対するcode specializati
 動的な多相性を保ちつつ，良好なパフォーマンスを得ている\cite{jeff-phd}．
 
 % code specialization
-ここで，generic functionは同一の名前を持ち多相的な振る舞いをする関数であり，
+ここで，generic functionは同一の名前の下で多相的な振る舞いをする関数であり，
 実行時にある引数型を伴ってはじめて呼ばれたタイミングでコンパイル
 （これを\textbf{JITコンパイル}，または単に\textbf{JIT}とよぶ）される．
 JITの過程においては，まず引数の型情報を用いてその関数呼び出しに対する型推論が行われ，
-その呼び出し内で生じる関数（正確にはメソッド）呼び出しのコンパイルタイムにおける決定や，
+呼び出し内で生じる関数（正確にはメソッド）呼び出しのコンパイルタイムにおける決定や，
 constant propagation, function inliningなどの標準的な最適化が行われた後，
 LLVMフレームワーク\cite{LLVM}を用いた最適化が行われ，
 最終的に個々のプラットフォームに対応したマシンコードが生成され実行される．
@@ -60,7 +61,7 @@ LLVMフレームワーク\cite{LLVM}を用いた最適化が行われ，
 \footnotetext{
   ただし，全ての引数型に対してcode specializationが行われるわけではない．
   ヒューリスティック的にある種の引数型に対するcode specializationを制限することで，
-  過剰なcode generation（\ref{subsubsection:eval-process}）が行われてしまうことを避けている．
+  過剰なcode generation（\hyperref[subsubsection:eval-process]{Juliaの実行プロセス}参照）が行われてしまうことを避けている．
   % IDEA: ヒューリスティックの中身を説明しても面白いかも．
   ヒューリスティックの具体的な内容については\cite[p.~11]{jeff-master}が詳しい．
 }
@@ -69,7 +70,8 @@ LLVMフレームワーク\cite{LLVM}を用いた最適化が行われ，
 また，1つのgeneric functionは複数の実装を持つことができ，
 プログラマはgeneric functionの定義時に，引数に型アノテーションを付けることで，その実装
 （これを\textbf{メソッド}と呼ぶ）が適用され得る引数型組の集合を記述することができる．
-generic functionが呼ばれた時，そのメソッドの中から全ての引数の実行時の型\footnote{
+generic functionが呼ばれた時，そのgeneric functionが持つメソッドの中から
+全ての引数の実行時の型\footnote{
   Juliaの実行時において，全てのオブジェクトの型は\textbf{concrete type（具体型）}である．
   一方，\textbf{abstract type（抽象型）}は
   各concrete typeの関係性を記述し型システムの階層性を表現する上での
@@ -91,39 +93,46 @@ generic functionが呼ばれた時，そのメソッドの中から全ての引�
 
 具体例として，\verb|sum|関数に対するcode selectionを考えてみる．
 Julia v1.5においては\verb|sum|関数には標準ライブラリを含めて計14個のメソッドが与えられている．
-そのうちの3つを抜粋する（読みやすさのためやや改変している）．
+そのうちの3つを抜粋する（読みやすさのためにやや改変している）．
 
 \inputminted[frame=lines, linenos]{julia}{src/sums_method.jl}
 
 1行目のメソッドが最もgenericな場合を扱う実装であり，
 2行目のメソッドがgenericな配列型に対する実装，
-そして3行目のメソッドが\verb|Bool|型の要素を持つ配列に特化した実装となっている．
+そして3行目のメソッドが特に\verb|Bool|型の要素を持つ配列に特化した実装となっている．
 5行目の呼び出しは\verb|(1, 0, 1)|の型\verb|Tuple{Int,Int,Int}|に合うメソッドシグネチャが
 \verb|sum(a)|の他に存在しないため，1行目のメソッドにdispatchされる．
 次に，6行目の呼び出しは一般的な配列型の引数に特化した2行目のメソッドにdispatchされる．
-最後に7行目の呼び出しは，特に\verb|BitArray|型の配列の効率的なメモリレイアウトを利用する
+最後に7行目の呼び出しは，特に\verb|BitArray|型の要素を持つ配列の効率的なメモリレイアウトを利用する
 \verb|count|関数を呼び出す3行目のメソッドにdispatchされる．
 
 ここで注意するべきなのは，型アノテーションは基本的にメソッドのdispatchをコントロールする目的のため\kenten{だけ}に用いられるということである．
-例えば，\verb|sum(a::AbstractArray; dims=:)|は和を取る配列の次元を指定するキーワード引数\verb|dims|を受け取るため，
-最もgenericな\verb|sum(a)|とは異なるメソッドである必要があるが
+
+例えば，上述の\verb|sum(a::AbstractArray; dims=:)|は配列の和を取る次元を指定するキーワード引数\verb|dims|を受け取るため，
+型アノテーションを用いて最もgenericなメソッド\verb|sum(a)|とは異なるメソッドとして定義される必要がある
 \footnote{
   キーワード引数はdispatchにおいて考慮されないため，位置引数の型に対するdispatchを用いる必要がある．
-}，
-次のような\verb|sum|を呼び出す関数\verb|add_sum|を定義する場合，
-型アノテーションの有無に関わらず呼び出し時の引数型に応じたcode specializationが行われるため，
-型アノテーションを付けることはパフォーマンスの向上には繋がらず，
-むしろいたずらにこの関数が持ちうる多相性を損なってしまうことになる
+}．
+
+一方，引数\verb|a|を受け取り\verb|a|の各要素に対して\verb|a|の和を足す以下のような
+generic function \verb|add_sum|を定義することを考えたとき，
+\begin{minted}{julia}
+  add_sum(a) = a .+ sum(a)
+\end{minted}
+型アノテーションの有無に関わらず，
+実行時に\verb|add_sum|が呼び出された時の引数の型に応じたcode specializationが自動的に行われるため，
+例えば\verb|BitArray|型の引数に対して\verb|add_sum|を最適化するために
+\jlinline{add_sum(a::BitArray)}のようなアノテーションを付ける必要は\textbf{ない}．
+むしろこの場合，\jlinline{add_sum(a::BitArray)}という型アノテーションを付けることで，
+例えば，本来ならば問題なく動作する\verb|Tuple{Int,Int,Int}|型の引数に対して\verb|add_sum|を適用できなくなるため，
+型アノテーションを付けることはパフォーマンスの向上には繋がらないばかりか，
+いたずらにこの関数が持ちうる多相性を損なってしまうことになる
 \footnote{
   また型アノテーションにより，JITコンパイルの速度面でのパフォーマンスが向上することもない:
   \url{https://discourse.julialang.org/t/type-annotation-make-jit-compile-faster/31906/2}
 }．
 
-\begin{minted}{julia}
-  add_sum(a) = a .+ sum(a)
-\end{minted}
-
-この例からも分かるように，様々なユースケースにおいて効率的に動くgeneric functionを用意するために
+これらの例からも分かるように，様々なユースケースに対して効果的に動作するgeneric functionを用意するために
 言語のコア機能やパッケージの開発において型アノテーションを行うことはあっても，
 そのエンドユーザがパフォーマンスを得るためにプログラムにアノテーションを付けなくてはならない場面はほとんどない
 \footnote{
@@ -153,8 +162,6 @@ Julia v1.5においては\verb|sum|関数には標準ライブラリを含めて
   そうした数学の複雑な振る舞いを自然にプログラミングすることができる．
 }
 
-\vspace{1ex}
-
 一方でJuliaのこうした強力な多相性はduck typingにより暗黙的にもたらされるため，バグの温床にもなりうる．
 というのも，Juliaのプログラミングパターンにおいては，
 良くも悪くもプログラマはgeneric functionがある種out-of-boxに動くことを想定しつつプログラミングをすることになるからである．
@@ -162,7 +169,7 @@ Juliaの言語実装の大部分は自身で記述されているおり，言語
 Juliaの洗練された言語設計によりそれらのコードは多くの場合でプログラマの期待通りに動くものの，
 そうでない場合に発生するエラーをプログラマが事前に予想することは難しい．
 
-例えば，以下のようなコマンドライン引数（文字列型の配列型）を整数にパースし，
+例えば，以下のようなコマンドライン引数（文字列型の要素を持つ配列型）を整数にパースし，
 それらの和を返す関数\verb|parse_sum|があるとする．
 
 \begin{listing}[ht]
@@ -176,28 +183,29 @@ Juliaの洗練された言語設計によりそれらのコードは多くの場
 \footnotemark % TODO: たぶん3章でも説明することになる？
 ，\verb|ARGS|が空の配列である場合に，
 4行目の\verb|sum(ints)|の内部における関数呼び出し\verb|zero(T)|
-（\verb|T|は\verb|sum|の引数の要素型，この場合は\verb|Any|である）
-において， \verb|zero(::Type{Any})|という呼び出しのシグネチャが
+（\verb|T|は\verb|ints|の要素型，この場合は\verb|Any|である）
+において，\jlinline{zero(::Type{Any})} という呼び出しのシグネチャが
 dispatchされ得るメソッドが存在しないことに起因するエラーが発生する．
-この場合，\verb|zero|をオーバーロードし\verb|zero(::Type{Any})|に対応するメソッドを追加するか，
-2行目を \jlinline{ints = Int[]} として\verb|ints|の要素型まで指定して定義することでエラーは避けられるものの，
+この場合，\verb|zero|をオーバーロードし \jlinline{zero(::Type{Any})} に対応するメソッドを追加するか，
+2行目を \jlinline{ints = Int[]} として\verb|ints|の要素型まで指定して宣言することでエラーは避けられるものの，
 \verb|sum|が引数の要素型に制限を設けず多相的に定義されている以上，
 \verb|sum|がgenericな配列型に対して動作すると期待するプログラマがこうしたエラーを事前に予測することは簡単ではない．
 
 \footnotetext{
-  Juliaは現在のところ逆方向の型推論（"backwards type flow"）を行うことができない\cite{julia-2012}\ref{subsubsection:inference-algorithm}．
-  コンテナ型の変数のパラメータ型を変数宣言以降のコードの操作から
-  推論することはできず，この場合\texttt{ints}には
-  \texttt{[]}の型\texttt{Array\{Any,1\}}がそのまま与えられる．
+  Juliaは現在のところ逆方向の型推論（"backwards type flow"）を行うことができない\cite{julia-2012}（\ref{subsubsection:inference-algorithm}も参照せよ）．
+  そのため，
+  コンテナ型の変数のパラメータ型を変数宣言以降のコードの操作から推論することはできず，
+  この場合\texttt{ints}には\texttt{[]}の型\texttt{Array\{Any,1\}}がそのまま与えられる．
 }
 
 また，こうしたエラーを実行時前に静的に検出することも容易ではない．
 というのは，一般にJuliaのgeneric functionの挙動は，その呼び出し時に与えられた引数型に従って決定されるため，
 それぞれの関数や変数の定義だけを見て行うシンタックスレベルの解析では，このような型エラーの検出はできないからである．
-型アノテーションを付けることでメソッドの引数の型が静的に決定される場合，
+型アノテーションを付けることでメソッドの引数の型が静的に（型検査可能な程度に）決定される場合，
 静的型付けの言語で用いられるようなintra-procedualな型解析を行うことができるが，
-上述したようにJuliaの型アノテーションはgeneric functionのdispatchをコントロールするために
-あくまで補助的に用いられるものであり，静的解析のために型アノテーションをつけることにより，
+上述したようにJuliaの型アノテーションは
+generic functionのdispatchをコントロールするために用いられるものであり，
+静的解析のために型アノテーションをつけることにより，
 元のgeneric functionが持っている多相性が損なわれることがあってはならない．
 
 \subsubsection{メタプログラミング} \label{subsubsection:metaprogramming}
@@ -219,8 +227,8 @@ Juliaのメタプログラミング機能は，プログラマが（いわゆる
 パースタイムにおいてあらゆるプログラムをデータ構造として扱い操作することができるという点で，
 \textbf{より}強力である．
 上のプログラムにおける\verb|@inline|など\verb|@|から始まるコードがマクロに相当し，
-ここでは，\verb|@inline|マクロは関数定義の式を受け取り，
-最適化の過程においてその関数をinliningするように促す「ヒント」をJITコンパイラに与えるメタ情報を関数定義に追加する．
+例えば\verb|@inline|マクロは関数定義の式を受け取り，
+最適化の過程においてその関数をinliningするように促す「ヒント」をJITコンパイラに与えるメタ情報を関数定義に付与する．
 言語のコア機能に限らずJuliaのエコシステムにおいてもマクロは頻繁に用いられており，
 例えばJuliaの数理最適化分野のエコシステムにおけるデファクトスタンダードなパッケージである
 JuMP.jl\cite{DunningHuchetteLubin2017}
@@ -272,10 +280,8 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 
 \begin{enumerate}
   \item コード片をパースし\textbf{surface AST}\footnote{
-          "AST"は"Abstract Syntax Tree"（抽象構文木）の略．
+          ASTは"Abstract Syntax Tree"（抽象構文木）の略．
         }を得る．
-  \item モジュールの使用や型の定義などの"toplevel action"はインタープリタにより実行される．
-        以下は関数呼び出しなど"toplevel action"ではない場合の実行プロセスとする．
   \item surface ASTに含まれるマクロを全て展開（\textbf{マクロ展開}）し，
         さらに\textbf{lowering}\footnote{
           ここで"lowering"とは，型推論などの解析がしやすいように，
@@ -283,15 +289,19 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
           lowered form（または単にIR，Intermediate Representationと呼ぶ）
           にさらに変換することを指す．
         }を行い\textbf{lowered form}を得る．
+  \item モジュールの使用や型の定義などの"toplevel action"をインタープリタにより実行する．
+        以下は関数呼び出しなど"toplevel action"ではない場合の実行プロセスとする．
   \item 簡単なヒューリスティック\footnote{
+          このヒューリスティックの具体的な内容については，
           \url{https://github.com/JuliaLang/julia/blob/master/src/toplevel.c\#L588-L819}
+          を参照せよ．
         }を用いて
         lowered formをインタープリタにより実行するか，JITコンパイルを行うかを決定する．
         以下はJITコンパイルされる場合のプロセスとする．
-  \item lowered formに対して型推論と最適化を行い，\textbf{typed lowered form}を得る
-  \item type lowered formからLLVM命令列を生成する
-  \item LLVMがnative codeを生成する
-  \item native codeが実行される
+  \item lowered formに対して型推論と最適化を行い，\textbf{typed lowered form}を得る．
+  \item type lowered formからLLVM命令列を生成する．
+  \item LLVMがnative codeを生成する．
+  \item native codeが実行される．
 \end{enumerate}
 
 特に5から7のプロセスを指して，\textbf{code generation}と呼ぶ．
@@ -307,7 +317,7 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 他のいくつかの動的型付け言語においても核となるパラダイムであり，
 そのトレードオフとして生じるプログラムの品質保証に伴う困難さについてはそれらの言語においても同様の問題意識が存在する．
 
-そうした動的言語で書かれたプログラムに対する型レベルでの解析取り組みとしては，
+そうした動的言語で書かれたプログラムに対する型レベルでの解析の取り組みとしては，
 これまで大きく以下の2つのアプローチが取られてきた．
 
 \begin{enumerate}
@@ -335,7 +345,7 @@ duck-typingに相当するものとしてstructural typingを使用する\footno
   \href{https://mypy.readthedocs.io/en/latest/protocols.html\#protocols-and-structural-subtyping}{"Protocol"}
   と呼ばれるある種のインターフェースを明示的に指定させるが，
   Steepはクラスシグネチャのメソッド集合の包含関係から部分型関係を判断する．% REVIEW: 自動でやってくれるのか
-}ことで表され，いずれの場合もプログラマが与えるシグネチャにより明示的に導入される．
+}ことで表現され，いずれの場合もプログラマが与えるシグネチャにより明示的に導入される．
 この方式を採用する多くのシステムは，静的に型が決定できない場合，
 \textbf{動的型}\footnote{
   ここで「動的型」は，\href{https://www.typescriptlang.org/docs/handbook/basic-types.html\#any}{TypeScriptにおける\texttt{any}型}
@@ -359,18 +369,18 @@ duck-typingに相当するものとしてstructural typingを使用する\footno
 TypeScriptのように元の言語との互換性を保たない拡張言語において
 型に関する記述を言語の標準機能として行えるようにするというものがある．
 
-この検査方式を採用したプロジェクトとしては数多くのプロジェクトが存在し，
+この検査方式を採用したプロジェクトは数多く存在し，
 mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaScript）~\cite{typescript}など，
-既に商用ソフトウェアの場面で実際に広く運用されているものもある．\
+既に商用ソフトウェアの場面で実際に広く運用されているものもある．
 
 この方式を採用することのメリットは様々ある．ここではその中でも重要と思われるものを述べる．
 \begin{itemize}
   \item おおよそ安全な型システムを得ることができる．
-  \item 型検査はクラスや関数を単位としてintra-proceduralに行われるため，実用的なパフォーマンスを得やすい．
+  \item 型検査はクラスや関数を単位として\textbf{intra-procedural}に行われるため，実用的なパフォーマンスを得やすい．
         具体例として，mypyプロジェクトはincremental checkingなど様々なエンジニアリングを経て
         Dropbox社の400万行ものコードベースに対し数分で検査可能なパフォーマンスを得ている\cite{dropbox}．
         また同様の理由から編集中のコードに対してリアルタイムに型検査を行うことで，
-        補完や推論された型情報のフィードバックなどのプログラマ支援に応用することも
+        自動補完や推論された型情報のフィードバックなどのプログラマ支援に応用することも
         可能である\cite{flow, typescript}．
   \item \cite{ruby-progress-report}で触れられているように，
         型検査に用いられる型シグネチャ自体がそのライブラリのAPIのある種のドキュメントとして機能しうる．
@@ -413,8 +423,8 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 プログラムの実行を型レベルで\textbf{抽象解釈}~\cite{abstract-interpretation, scheme-for-automatic-inference}し，
 その過程で発見した型エラーやトレースされた型情報そのものを報告するような手法を指す．
 
-プログラムをそのまま実行するのではなくあくまで型レベルに抽象化した上で解釈することにより，
-プログラム中の実際の実行における制御フローでは到達できない部分の解析や，
+プログラムをそのまま実行するのではなく，あくまで型レベルに抽象化した上で解釈することにより，
+実際の実行における制御フローでは到達できないプログラム部分の解析や，
 終了しないプログラムやプログラマが予期しない副作用を伴うプログラムなどのプロファイリングも可能であり，
 プログラムを実行するよりも有用な情報を引き出し，
 バグの発見や，出力された型情報をコード理解に役立てることができる
@@ -426,13 +436,9 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
 }
 解析の正確性と実行速度は抽象化の程度に依存し，トレードオフをなす．
 
-ここで注意すべきなのは，プログラムの抽象解釈はinter-proceduralに行われるということである．
-つまり，関数やメソッドを定義するプログラムを入力とするだけでは解析を行うことができず，
-それらを起動するエントリポイントとなるトップレベルのスクリプトも含めて与えられることにより解析を行うことが可能となる．
-
 % TODO: type-inference-for-javascriptを読んでより内容を深める
 
-また，追加的な型シグネチャによる型検査（\ref{subsubsection:type-check-with-annotation}）
+追加的な型シグネチャによる型検査（\ref{subsubsection:type-check-with-annotation}）
 とは異なり，この方式の先行事例は比較的少なく，
 RubyやJavaScriptでの取り組み~\cite{ruby-type-profiler, type-analysis-for-javascript, type-inference-for-javascript}
 があるが，いまだ広く実用に用いられているものはないように思われる．\
@@ -443,21 +449,25 @@ RubyやJavaScriptでの取り組み~\cite{ruby-type-profiler, type-analysis-for-
 
 一方で抽象解釈に伴う困難は様々に存在する．
 ここではruby-type-profiler~\cite{ruby-progress-report, ruby-type-profiler}で報告されているものを中心に紹介する．
-これらの問題点は後述のTypeProfiler.jlの設計（\ref{section:3}節）
-においても重要となる．
+これらの問題点は\ref{section:3}節のTypeProfiler.jlの設計においても重要となる．
 
 % IDEA: 入力となるプログラムが実行可能でなければならないことにも触れる？
 \paragraph{トップレベルスクリプトの必要性}
 
-上述したように型プロファイリングにはそれぞれの関数やメソッドを起動する
-トップレベルスクリプトが必要である．
+基本的に型プロファイリングは\textbf{inter-procedural}に行われる．
+そのため，関数やメソッドを定義するプログラムだけでは解析を行うことができず，
+それらを起動するエントリポイントとなるトップレベルのスクリプトも含めて与えられることにより解析が可能となる．
 
-一般に型解析がもたらすプログラムの品質保証はパッケージやライブラリの開発の場面において必要とされることが多く，
-テストコードをトップレベルスクリプトとして用いることができるものの，
-そのコードが（抽象解釈する上で）到達しない関数やメソッドは解析することができない．
-それらの引数として擬似的な入力を与えることで解析を行い，
-タイポや未定義エラーを検出できる可能性があるものの，
-解析の正確性は大きく下がらざるを得ない．
+そもそも，型解析がもたらすプログラムの品質保証は
+パッケージやライブラリの開発において必要とされることが多く，
+そのような場面では一般にテストコードが充実していることが期待される．
+そのため，そうしたテストコードを
+型プロファイリングを行うためのトップレベルスクリプトとして用いることができるものの，
+そのテストコードが（抽象解釈する上で）到達しない関数やメソッドは解析することができない．
+
+関数やメソッドの引数として擬似的な入力を与えることで解析を行い，
+タイポや未定義エラーなど比較的簡単なエラーを検出するような工夫は考えられるが，
+その場合解析の正確性は大きく下がらざるを得ない．
 
 % % REVIEW: もう一度入れる？ TypeProfiler.jlでのfalse positiveの扱い方次第かも
 % \paragraph{false positiveな報告}
@@ -491,17 +501,17 @@ RubyやJavaScriptでの取り組み~\cite{ruby-type-profiler, type-analysis-for-
 
 \paragraph{抽象化の程度とスケーラビリティ}
 
-一般に型プロファイリングのようなinter-proceduralな解析手法はスケーラビリティに問題を持つ．
+型プロファイリングも含め，一般にinter-proceduralな解析手法はスケーラビリティに問題を持つ．
 具体的には，プログラムの抽象解釈では型を一意に決定できない場合，union型などを導入し解釈を続行するが，
 条件分岐が続いた場合解析するべき状態の数が増大し，解析に時間がかかってしまう可能性がある．
-また，型として（その要素型がネストしうる）コンテナ型が存在する場合，
-そのままでは存在しうる型が有限にならず，抽象解釈のアルゴリズムの停止性を保証できない．
+また，型として（そのパラメータ型がネストしうる）コンテナ型が存在する場合，
+そのままでは存在しうる型が有限にならず，抽象解釈のアルゴリズムの停止性を保証できなくなる．
 
 これらの問題は，何らかのヒューリスティックを用いて，
 抽象解釈中の状態や抽象値の数を制限することで対処することが多いが，
 状態がより抽象化される分だけ解析の正確性は失われてしまうため，
 解析の正確性とスケーラビリティはトレードオフの関係をなしている．
-実用的に必要な解析の正確性を保ちつつ，同時に実用に耐え得るスケーラビリティも保てるように
+実用上必要な解析の正確性を保ちつつ，同時に実用的なスケーラビリティも保てるように
 抽象化の程度を調整する必要がある．
 
 \subsubsection{現行のエコシステムにおけるエラーチェッカー: StaticLint.jl} \label{subsubsection:staticlint}
@@ -518,7 +528,7 @@ Juliaプログラム中に含まれる，シンタックスレベルでの解析
 ここで，シンタックスレベルの解析とは，surface AST
 （\hyperref[subsubsection:eval-process]{Juliaの実行プロセスと中間表現}参照）
 の段階のプログラム表現から得られる情報を用いた解析を意味し，
-つまりStaticLint.jlは実行プロセス3以降のプロセスに相当する解析は行わない．
+つまりStaticLint.jlは実行プロセス2以降の段階のプログラム表現から得られる情報を用いた解析は行わない．
 
 解析をシンタックスレベルに留めることで，編集中のコードに対するlinterとして機能し得る
 パフォーマンスを獲得している一方，
@@ -526,8 +536,8 @@ Juliaプログラム中に含まれる，シンタックスレベルでの解析
 
 \paragraph{シンタックスレベルの解析で検知できないエラー} \label{paragraph:syntax-analysis-limitation}
 
-シンタックスレベルでの解析では検知できないエラーは様々あり，
-以下のような非常に簡単なtypoも，型レベルでの解析を行わない場合，検出できない．
+シンタックスレベルでの解析では検知できないエラーは様々ある．
+以下のような非常に簡単なtypoも，型レベルでの解析を行わない場合，検出することはできない．
 
 \begin{listing}[ht]
   \inputminted[frame=lines, linenos, firstnumber=1, firstline=23, lastline=33]{julia}{./src/typo.jl}
@@ -535,15 +545,16 @@ Juliaプログラム中に含まれる，シンタックスレベルでの解析
   \label{lst:target3}
 \end{listing}
 
-このコードでは6行目にtypoが含まれており，実行すると11行目において\verb|F2|型の変数に
-フィールド\verb|bar|が定義されていないことに起因するエラーが発生する．
+このコードでは6行目にtypoが含まれており，
+実行すると11行目において\verb|F2|型のオブジェクトに
+field \verb|bar|が定義されていないことに起因するエラーが発生する．
 しかし，StaticLint.jlはこのプログラムに含まれるエラーを報告しない\footnote{
-  \date{\today}時点でのJuliaレポジトリのmasterブランチからビルドしたJuliaを用いて，
+  2020年2月5日時点でのJuliaレポジトリのmasterブランチからビルドしたJuliaを用いて，
   StaticLint.jl v3.0.0がlinterとして使用されているjulia-vscode v0.13.1上で動作確認を行った:\
   \url{https://github.com/julia-vscode/julia-vscode}
 }．
 というのは，関数\verb|get_bar|の定義だけを見るとその引数\verb|foo|として実際にどのような
-型の変数が渡されるのか決定できず\footnote{
+型のオブジェクトが渡されるのか決定できず\footnote{
   \texttt{Foo}がabstract typeであることに注意せよ．
 }，
 また上述したパフォーマンス上の理由から，
@@ -567,7 +578,7 @@ inter-proceduralなプログラム解釈は行えないからである．
   実際にはマクロ展開時に，引数式のそれぞれの形式に対応してJuMP.jlの内部的なデータとして
   変数（この場合は\texttt{x}）を定義するようなコードを生成するためもちろんエラーは起きない．
   一方StaticLint.jlはマクロ展開をサポートしていないため，
-  v3.0.0まではこの場合に未定義変数の参照エラーを報告されていたが，
+  v3.0.0まではこの場合に未定義変数の参照エラーを報告していたが，
   現在は対応されている:\\
   \url{https://github.com/julia-vscode/StaticLint.jl/pull/72}
 }．
