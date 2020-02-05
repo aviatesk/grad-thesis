@@ -42,6 +42,20 @@ TypeProfiler.jlが呼び出す型推論ルーチンにおいてそれらのヒ�
 型プロファイリングの実行速度と，型エラー検出の正確性とのトレードオフを考慮しつつ，
 （おそらく実験的に）調整していく必要がある．
 
+% REVIEW: how to profile on generated function
+\subsubsection{staged programmingを含むプログラムのサポート}
+
+現時点では，staged programmingが含まれるプログラムに対する解析はまだサポートできていない．
+
+ただ，以下のやり方で部分的にサポートをすることは可能である．
+プロファイリングの過程で\verb|@generated|マクロが付与されたメソッドの呼び出しが生じたとき，
+メソッドの呼び出しをする前に，まず（concreteな）引数組の型情報を用いてそのgenerated functionの実装となるコードを生成し，
+その後にその生成されたコードに対して通常のメソッド呼び出しと同様の型プロファイリングを行う．
+
+しかし，generated functionによるコード生成は実行時の型情報を用いて行われるため，
+推論された引数型がconcreteでない場合，コード生成を正しく行うことができない．
+その場合にどのように解析を行うかについての検討は今後の課題である．
+
 \subsubsection{マクロ展開に対するエラー検出}
 
 paragraph~\label{paragraph:type-profiler-basic-implementation}で説明したように，
