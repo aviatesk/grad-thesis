@@ -286,7 +286,7 @@ Juliaの型システムは\verb|Union|型や\verb|Tuple|型，そしてコンテ
   これをJuliaプログラムで表現すると以下のようになる．
   \begin{itemize}
     \item \mintinline{julia}{length(type) = length(type.parameters)}
-    \item \mintinline{julia}{depth(type) = isempty(tyep.parameters) ? 1 : 1 + maximum(depth, type.parameters)}
+    \item \mintinline{julia}{depth(type) = isempty(type.parameters) ? 1 : 1 + maximum(depth, type.parameters)}
   \end{itemize}
 }．
 

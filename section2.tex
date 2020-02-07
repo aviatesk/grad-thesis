@@ -21,7 +21,7 @@ Juliaは\textbf{generic function（総称関数）ベースのオブジェクト
 このsubsectionではgeneric functionとメタプログラミングという2点からJuliaの性質を概観し，
 Juliaプログラムを型レベルで静的解析する必要性と，
 その際にどのような困難を生じ得るかをコード例と共に紹介する．
-subsection~\ref{subsection:experiments-and-comparison}において，それらのコード例は
+それらのコード例は，subsection~\ref{subsection:experiments-and-comparison}において
 型プロファイラを用いて解析される．
 
 \footnotetext{
@@ -157,7 +157,7 @@ generic function \verb|add_sum|を定義することを考えたとき，
   数学において同一の名前の演算子は使用される文脈により多様かつ複雑な振る舞いをみせる．
   Juliaのプログラミングパターンにおいては，その名前から「連想される」振る舞いを行う限り
   様々な実装（メソッド）を同一のgeneric functionに追加するが，
-  そのそれぞれのメソッドが実行時の引数の型に応じて動的に呼ばれることで，
+  そのそれぞれのメソッドが全ての引数の実行時型に応じて動的に呼ばれることで，
   そうした数学の複雑な振る舞いを自然にプログラミングすることができる．
 }
 
@@ -404,7 +404,7 @@ mypy（Python）~\cite{mypy}，Steep（Ruby）~\cite{steep}，TypeScript（JavaS
   その意味で，静的な型検査に伴う最大のデメリットは，
   静的な型付けを意識しなくてはならないことそのものであると考えることもできる\cite{what-is-gradual-typing}．
   プログラムの型検査を通すために，プログラマの思考方式は良くも悪くも変化させられ，
-  また必要に応じて型検査を通すためだけのテクニックを覚えなくてはならない
+  また場合によっては型検査を通すためだけのテクニックを覚えなくてはならない
   （"Expression Problem"\cite{wadler1998expression}のように，
   型システムが自然かつ明快に表現することができない問題が存在する）．
   漸進的型付けは，前述の動的型を許すことによりこの問題にアプローチしているとも言えるが，
