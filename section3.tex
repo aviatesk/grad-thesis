@@ -239,7 +239,7 @@ generic functionの呼び出しに対するサブルーチンは以下の式で�
 \textit{incomplete}タグが付与されている全ての関数の返り値型がfix-pointに至るまで，
 この相互再帰関数呼び出しのサイクルに対して推論のプロセスを繰り返す\footnote{
   このinter-procedural type inferenceの実装は，
-  特に相互再帰呼び出しのサイクルが同一の推論プロセス中に複数存在する場合などで，
+  特に複数の相互再帰呼び出しのサイクルが同一の推論プロセス中に存在する場合などで，
   型推論のパフォーマンスに大きな影響を与える．
   Juliaの型推論アルゴリズムにおいてそれが実際どのように実装され，技術的な課題点がいかに克服されているかについては
   \cite{jameson, jameson-revisited}が詳しいが，ここでは詳細な説明は避ける．
@@ -339,7 +339,7 @@ wideningはそれぞれの型に応じて以下のように行われる．
         }．
 \end{description}
 
-以上に説明したwideningによりJuliaの型推論の収束性が保証され，結果的にJITの停止性をもたらす．
+以上に説明したwideningによりJuliaの型推論の収束性が保証され，つまりJITの停止性が保証される．
 
 \paragraph{ヒューリスティック} \label{paragraph:inference-heuristic}
 

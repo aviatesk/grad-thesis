@@ -10,7 +10,7 @@
 2. [静的な型エラー検出を考える上でのJulia言語の考察と先行研究](./section2.tex)
    1. Julia言語の特徴と静的解析
       + [x] generic function
-      + [ ] metaprogramming
+      + [x] metaprogramming
    2. 先行研究
       + [x] type checking by type annotation
       + [x] type profiling

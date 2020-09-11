@@ -570,7 +570,7 @@ inter-proceduralなプログラム解釈は行えないからである．
 マクロ展開ではマクロが使われている場所とマクロの定義式の両方を参照しなくてはならず，
 ここでもinter-proceduralなプログラム解釈が必要となる．
 
-現状ではエコシステムにおける重要度の高いパッケージのマクロのみを
+StaticLint.jlは現状ではエコシステムにおける重要度の高いパッケージのマクロのみを
 それぞれ個別にspecial caseすることで部分的に対応している\footnote{
   例えば，listing~\ref{lst:target2}の3行目の\texttt{@variable}マクロは，
   引数式　\jlinline{0 <= x <= 2} \textbf{だけ}を見ると，
