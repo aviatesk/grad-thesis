@@ -94,7 +94,7 @@ generic functionが呼ばれた時，そのgeneric functionが持つメソッド
 Julia v1.5においては\verb|sum|関数には標準ライブラリを含めて計14個のメソッドが与えられている．
 そのうちの3つを抜粋する（読みやすさのためにやや改変している）．
 
-\inputminted[frame=lines, linenos]{julia}{src/sums_method.jl}
+\inputminted[frame=lines, linenos]{julia}{code/sums_method.jl}
 
 1行目のメソッドが最もgenericな場合を扱う実装であり，
 2行目のメソッドがgenericな配列型に対する実装，
@@ -172,7 +172,7 @@ Juliaの洗練された言語設計によりそれらのコードは多くの場
 それらの和を返す関数\verb|parse_sum|があるとする．
 
 \begin{listing}[ht]
-  \inputminted[frame=lines]{julia}{src/parse_sum.jl}
+  \inputminted[frame=lines]{julia}{code/parse_sum.jl}
   \caption{poorly typed code}
   \label{lst:target1}
 \end{listing}
@@ -219,7 +219,7 @@ generic functionのdispatchをコントロールするために用いられる�
   より抜粋．
 }．
 
-\inputminted[frame=lines, firstline=3, lastline=12, breaklines]{julia}{src/sums_def.jl}
+\inputminted[frame=lines, firstline=3, lastline=12, breaklines]{julia}{code/sums_def.jl}
 
 こうした文字操作的なメタプログラミングは他の動的言語でもよく見られる機能であるが，
 Juliaのメタプログラミング機能は，プログラマが（いわゆる「Lispスタイル」の）マクロを通じて
@@ -234,7 +234,7 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
 は独自のマクロを効果的に定義し，以下のような明瞭で簡潔なモデリング記法を提供している．
 
 \begin{listing}[ht]
-  \inputminted[frame=lines, linenos, firstnumber=1, firstline=4, lastline=10]{julia}{src/jump.jl}
+  \inputminted[frame=lines, linenos, firstnumber=1, firstline=4, lastline=10]{julia}{code/jump.jl}
   \caption{code including macros}
   \label{lst:target2}
 \end{listing}
@@ -293,7 +293,7 @@ JuMP.jl\cite{DunningHuchetteLubin2017}
         以下は関数呼び出しなど"toplevel action"ではない場合の実行プロセスとする．
   \item 簡単なヒューリスティック\footnote{
           このヒューリスティックの具体的な内容については，
-          \url{https://github.com/JuliaLang/julia/blob/master/src/toplevel.c\#L588-L819}
+          \url{https://github.com/JuliaLang/julia/blob/master/code/toplevel.c\#L588-L819}
           を参照せよ．
         }を用いて
         lowered formをインタープリタにより実行するか，JITコンパイルを行うかを決定する．
@@ -477,7 +477,7 @@ RubyやJavaScriptでの取り組み~\cite{ruby-type-profiler, type-analysis-for-
 %
 % 具体例として以下のようなRubyプログラムを考える．
 %
-% \inputminted[frame=lines, linenos]{ruby}{src/false_positive.rb}
+% \inputminted[frame=lines, linenos]{ruby}{code/false_positive.rb}
 %
 % 2行目の条件と10行目の条件は同一の\verb|n|に対して等価であるため，
 % \verb|n|が\verb|Integer|であれば，
@@ -540,7 +540,7 @@ Juliaプログラム中に含まれる，シンタックスレベルでの解析
 以下のような非常に簡単なtypoも，型レベルでの解析を行わない場合，検出することはできない．
 
 \begin{listing}[ht]
-  \inputminted[frame=lines, linenos, firstnumber=1, firstline=23, lastline=33]{julia}{./src/typo.jl}
+  \inputminted[frame=lines, linenos, firstnumber=1, firstline=23, lastline=33]{julia}{./code/typo.jl}
   \caption{typo}
   \label{lst:target3}
 \end{listing}
